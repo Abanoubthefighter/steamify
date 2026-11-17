@@ -72,7 +72,7 @@ def history_track(player: dict, summary: dict, today: date) -> dict:
         "unit": "h",
         "horizontal": False,
         "start": config.DEFAULT_HISTORY_RANGE,
-        "legend": [["red", "still going"], ["sand", "best"]],
+        "legend": [["red", "still going"], ["cream", "best"]],
         "empty": (
             "No history yet. Steam doesn't keep one, so I build it from the "
             "difference between scans. Play something and come back."
@@ -114,14 +114,19 @@ def _history_view(key: str, buckets: list[str], rows: list[dict], size: str) -> 
     values = [round(logged[bucket]["minutes"] / 60, 1) if bucket in logged else 0 for bucket in buckets]
     notes = [f"mostly {logged[bucket]['top_game']}" if bucket in logged else "nothing logged" for bucket in buckets]
 
+    # Two bars get singled out: the best one in view and the period we're still
+    # in (its bar can still grow). Each also says so in its tooltip and gets its
+    # value printed on it, so the colour is never the only clue.
     last = len(buckets) - 1
     colors = ["lilac"] * len(buckets)
     marked = []
     if any(values):
         best = values.index(max(values))
-        colors[best] = "sand"
+        colors[best] = "cream"
+        notes[best] += ", the best in view"
         marked.append(best)
-    colors[last] = "red"  # the period we're still in, so its bar can still grow
+    colors[last] = "red"
+    notes[last] += ", still going"
     if values[last] and last not in marked:
         marked.append(last)
 

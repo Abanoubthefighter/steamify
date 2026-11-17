@@ -53,9 +53,10 @@ def test_history_fills_gaps_and_highlights_best_and_current():
     history = build([make_game(1, "Hades", hours=20), make_game(2, "Celeste", hours=5)], rows)[0]
     six_months = view(history, "6M")
     assert six_months["values"] == [0, 0, 11.0, 0, 0, 2.0]
-    assert six_months["colors"] == ["lilac", "lilac", "sand", "lilac", "lilac", "red"]
+    assert six_months["colors"] == ["lilac", "lilac", "cream", "lilac", "lilac", "red"]
     assert six_months["marked"] == [2, 5]
-    assert six_months["notes"][2] == "mostly Hades"
+    assert six_months["notes"][2] == "mostly Hades, the best in view"
+    assert six_months["notes"][5] == "mostly Hades, still going"
     assert six_months["notes"][0] == "nothing logged"
     assert six_months["titles"][5] == "November 2026"
 

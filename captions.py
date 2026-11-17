@@ -28,6 +28,9 @@ def backlog_alert(summary: dict) -> dict | None:
     if never == 0:
         return _alert("0", "games never launched", "Every single one got opened at least once. Who are you?")
 
+    if never == 1:
+        return _alert("1", "game never launched", "Just the one. It can wait a little longer.")
+
     share = 100 - summary["played_percent"]
     if share >= 50:
         caption = "More than half your library is still in the wrapper."
@@ -35,7 +38,7 @@ def backlog_alert(summary: dict) -> dict | None:
         caption = "That's a lot of “I'll get to it eventually”."
     else:
         caption = "Honestly? That's pretty disciplined."
-    return _alert(f"{never:,}", "game never launched" if never == 1 else "games never launched", caption)
+    return _alert(f"{never:,}", "games never launched", caption)
 
 
 def obsession_alert(summary: dict) -> dict | None:

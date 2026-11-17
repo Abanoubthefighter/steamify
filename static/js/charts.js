@@ -53,7 +53,13 @@ export function initCharts() {
   tableOn = Boolean(saved.table);
   // Chart.js draws its text on a canvas, which can't swap fonts in later the
   // way normal text does. So wait for the fonts before the first drawing.
-  document.fonts.ready.then(() => showTrack(saved.track ?? 0, saved.view));
+  document.fonts.ready.then(() => showTrack(saved.track ?? firstTrackWithData(), saved.view));
+}
+
+/** A freshly scanned player has no history yet, so open on a chart that has something to show. */
+function firstTrackWithData() {
+  const index = tracks.findIndex((track) => track.views.some((view) => view.values.some(Boolean)));
+  return Math.max(index, 0);
 }
 
 // --- Switching tracks and views --------------------------------------------
@@ -138,7 +144,7 @@ function dataFor(view) {
       {
         data: view.values,
         backgroundColor: view.colors.map(theme),
-        hoverBackgroundColor: theme("cream"),
+        hoverBackgroundColor: theme("sand"),
         borderColor: theme("ink"),
         borderWidth: 2,
         borderSkipped: false, // outline all four sides, like everything else in the app

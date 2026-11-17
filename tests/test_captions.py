@@ -31,7 +31,9 @@ def test_backlog_counts_the_unplayed():
 
 def test_backlog_uses_the_singular_for_one_game():
     games = [make_game(number, f"Game {number}", hours=3, recent_hours=1) for number in range(9)] + [make_game(99, "Unplayed")]
-    assert alerts_for(games)[0]["text"] == "game never launched"
+    backlog = alerts_for(games)[0]
+    assert (backlog["big"], backlog["text"]) == ("1", "game never launched")
+    assert "Just the one" in backlog["caption"]
 
 
 def test_a_fully_played_library_gets_congratulated():

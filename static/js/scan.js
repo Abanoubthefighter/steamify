@@ -59,14 +59,16 @@ function playersOnScreen({ force }) {
 
 /** `quiet` is for the automatic refresh: no popups, and no reload unless something changed. */
 async function runScan(form, { quiet = false } = {}) {
-  if (running) return;
-  running = new AbortController();
+  if (running && quiet) return; // a background refresh never interrupts a scan
+  running?.abort(); // but a scan the user asked for replaces whatever was going on
+  const mine = new AbortController();
+  running = mine;
   setBusy(true);
   showStep(0, 1, "Starting");
 
   let result = null;
   try {
-    const reply = await fetch(ui.scanForm.action, { method: "POST", body: form, signal: running.signal });
+    const reply = await fetch(ui.scanForm.action, { method: "POST", body: form, signal: mine.signal });
     if (!reply.ok) throw new Error(`The server answered ${reply.status}`);
     for await (const event of jsonLines(reply)) {
       if (event.label) showStep(event.step, event.steps, event.label);
@@ -76,6 +78,7 @@ async function runScan(form, { quiet = false } = {}) {
     result = error.name === "AbortError" ? { cancelled: true } : { error: LOST_CONNECTION };
   }
 
+  if (running !== mine) return; // a newer scan took over while this one was stopping, the page is its now
   running = null;
   setBusy(false);
   finish(result ?? { error: LOST_CONNECTION }, quiet);
