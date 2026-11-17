@@ -53,6 +53,34 @@ except ImportError:  # the app still works without it, in a normal browser tab
     webview = None
 
 THEME_FILE = config.APP_DIR / "static" / "css" / "theme.css"
+ERROR_ALREADY_EXISTS = 183  # Windows error code
+SW_RESTORE = 9              # ShowWindow: un-minimise
+
+
+def already_running(name: str = config.APP_ID) -> bool:
+    """True if another copy of the app is open already.
+
+    A named mutex is a flag Windows keeps for as long as the program that made
+    it is running. The first copy creates it. A second copy (the shortcut was
+    double-clicked twice) gets "already exists" back and knows it isn't alone.
+    The installer checks for the same name before it updates or removes the app.
+    """
+    if sys.platform != "win32":
+        return False
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW(None, False, name)  # held until this program exits
+    return ctypes.get_last_error() == ERROR_ALREADY_EXISTS
+
+
+def show_open_copy() -> None:
+    """Bring the window of the copy that's already open to the front."""
+    user32 = ctypes.windll.user32
+    window = user32.FindWindowW(None, config.WINDOW_TITLE)
+    if not window:
+        return
+    if user32.IsIconic(window):  # minimised to the taskbar
+        user32.ShowWindow(window, SW_RESTORE)
+    user32.SetForegroundWindow(window)
 
 
 def start_server() -> str:
@@ -118,6 +146,10 @@ def create_window(url: str):
 
 
 def main() -> None:
+    if already_running():
+        show_open_copy()
+        return
+
     prepare()
     url = start_server()
 
