@@ -17,7 +17,15 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 
 [Full-page screenshot](docs/dashboard-full.png)
 
-## Running it
+## Installing
+
+Run `SteamStatsTracker-1.0.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
+
+- Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
+- To update, run the newer installer. Your play history and API key stay.
+- To remove it, use **Settings > Apps > Installed apps**. It asks whether to delete your saved data too.
+
+## Running it from source
 
 You need Windows 10 or 11 and Python 3.10 or newer.
 
@@ -34,14 +42,19 @@ py desktop.py
 
 `py app.py` runs the same thing in a normal browser at http://127.0.0.1:5000, which is handy while changing the CSS.
 
-### As a standalone .exe
+### Building the installer
 
-Double-click `build_exe.bat`. It uses PyInstaller to build `dist\SteamStatsTracker`, a folder with a `SteamStatsTracker.exe` inside that runs on a PC without Python. Zip the folder to share it.
+You need [Inno Setup 6](https://jrsoftware.org/isinfo.php) (free) on top of the usual setup. Then double-click `build_exe.bat`. It takes under a minute and makes two things in `dist\`:
 
-- It's a folder rather than one big .exe on purpose. A single-file build has to unpack itself into a temp folder on every start, which makes it slow to open. This way the window is up in about a second.
-- The very first launch after building takes a few seconds longer while Windows checks the new files.
-- The .exe isn't code-signed, so Windows may ask for confirmation before running it on another PC.
-- The packaged app keeps its database and `.env` in `%LOCALAPPDATA%\SteamStatsTracker` instead of the project folder.
+- `SteamStatsTracker\`: the app, built by PyInstaller from `packaging\SteamStatsTracker.spec`. It runs without Python.
+- `SteamStatsTracker-1.0.0-Setup.exe`: that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
+
+Without Inno Setup you still get the folder. A few things worth knowing:
+
+- **The .exe needs its `_internal` folder.** That's where Python itself lives. Copy `SteamStatsTracker.exe` somewhere on its own and it stops with "Failed to load Python DLL". The installer exists so nobody has to know that.
+- **Why a folder and not one big .exe.** A single-file build unpacks itself into a temp folder on every start. Measured here, it opened in 1.1 s against 0.7 s for the folder, and it leaves those temp folders behind if it's ever killed.
+- **The version number** lives in `config.py` as `APP_VERSION`. The .exe's Properties tab, the About box and the installer's file name all read it from there.
+- The installed app keeps its database and `.env` in `%LOCALAPPDATA%\SteamStatsTracker`, not next to the program, which is why updates don't touch them.
 
 ## Using your own Steam data
 
@@ -68,11 +81,12 @@ captions.py    the jokes in the warning popups
 demo.py        the made-up player
 config.py      every setting in one place
 run.bat        sets things up on the first run, then opens the app
-build_exe.bat  builds the standalone .exe
+build_exe.bat  builds the app and its installer
+packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
-tests/         123 tests, none of which go online
+tests/         126 tests, none of which go online
 ```
 
 A few decisions worth explaining:
@@ -83,13 +97,14 @@ A few decisions worth explaining:
 - **Sorting lives in Python only.** The page asks the server for re-sorted rows as HTML instead of repeating the sort rules in JavaScript.
 - **Names from Steam are untrusted.** Templates escape everything, a Content-Security-Policy blocks inline scripts, and the local server refuses requests that didn't come from its own window.
 - **Errors are written for people.** Bad key, private profile, timeout, no connection: each one is its own exception with a title and message that go straight into a popup. The API key is kept out of error text on purpose.
+- **One copy at a time.** On start the app claims a named Windows mutex. If a copy already holds it, the new one brings that window forward and quits, so a double double-click doesn't give you two windows writing to the same database. The installer checks the same name and asks you to close the app before it updates or removes it.
 
 On my machine the dashboard for a 3,000-game library renders in about 25 ms, and saving a scan of that size takes about 14 ms.
 
 ## Making it yours
 
 - **Colours, fonts, outline thickness, spacing:** `static/css/theme.css`. Nothing else contains a colour, and the charts read theirs from the same file.
-- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size).
+- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number).
 - **The jokes:** `captions.py`.
 - **A new sort order:** add one function and one line to `SORT_ORDERS` in `stats.py`. The radio button appears on its own.
 - **Window order:** reorder the `include` lines in `templates/dashboard.html`.
@@ -104,7 +119,8 @@ py -m pytest
 ## Known limits
 
 - History only starts when you first scan, and playtime is dated to the day of the scan that noticed it. Scan often and the chart gets finer.
-- Windows only for now. pywebview supports macOS and Linux, but the two `.bat` files and the console workaround in `desktop.py` are Windows things.
+- Windows only for now. pywebview supports macOS and Linux, but the `.bat` files, the installer and the console and single-copy code in `desktop.py` are Windows things.
+- The installer and the .exe aren't code-signed (a certificate costs money every year), so Windows SmartScreen warns about them on other PCs.
 
 ## Credits
 
