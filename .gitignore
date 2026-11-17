@@ -14,6 +14,7 @@ __pycache__/
 # PyInstaller output (see build_exe.bat)
 build/
 dist/
+*.spec
 
 # Editor and assistant settings, not part of the app
 .vscode/

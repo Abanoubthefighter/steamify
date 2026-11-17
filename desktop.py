@@ -139,7 +139,9 @@ if __name__ == "__main__":
     try:
         main()
     except Exception:
-        # Started by run.bat there is no console to print an error to, so the
-        # app would just fail to appear. Leave a note on disk instead.
+        # Started by run.bat (or as the packaged .exe) there is no console to
+        # print an error to, so the app would just fail to appear. Leave a
+        # note on disk instead.
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         (config.DATA_DIR / "crash.log").write_text(traceback.format_exc(), encoding="utf-8")
         raise

@@ -34,6 +34,15 @@ py desktop.py
 
 `py app.py` runs the same thing in a normal browser at http://127.0.0.1:5000, which is handy while changing the CSS.
 
+### As a standalone .exe
+
+Double-click `build_exe.bat`. It uses PyInstaller to build `dist\SteamStatsTracker`, a folder with a `SteamStatsTracker.exe` inside that runs on a PC without Python. Zip the folder to share it.
+
+- It's a folder rather than one big .exe on purpose. A single-file build has to unpack itself into a temp folder on every start, which makes it slow to open. This way the window is up in about a second.
+- The very first launch after building takes a few seconds longer while Windows checks the new files.
+- The .exe isn't code-signed, so Windows may ask for confirmation before running it on another PC.
+- The packaged app keeps its database and `.env` in `%LOCALAPPDATA%\SteamStatsTracker` instead of the project folder.
+
 ## Using your own Steam data
 
 The app starts with a made-up player so there's something to look at. To see a real library you need a free Steam Web API key:
@@ -58,6 +67,8 @@ charts.py      decides what each chart shows
 captions.py    the jokes in the warning popups
 demo.py        the made-up player
 config.py      every setting in one place
+run.bat        sets things up on the first run, then opens the app
+build_exe.bat  builds the standalone .exe
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
@@ -93,8 +104,7 @@ py -m pytest
 ## Known limits
 
 - History only starts when you first scan, and playtime is dated to the day of the scan that noticed it. Scan often and the chart gets finer.
-- Windows only for now. pywebview supports macOS and Linux, but `run.bat` and the console workaround in `desktop.py` are Windows things.
-- Not packaged as a single `.exe` yet.
+- Windows only for now. pywebview supports macOS and Linux, but the two `.bat` files and the console workaround in `desktop.py` are Windows things.
 
 ## Credits
 
