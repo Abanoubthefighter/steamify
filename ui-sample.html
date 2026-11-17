@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steam Stats Sample</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Josefin+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ===== THEME: edit only this block to reskin ===== */
+:root {
+  --bg: #f7a04b;          /* page background */
+  --paper: #fde2c6;       /* window body */
+  --ink: #3b2232;         /* outlines and text */
+  --lilac: #d8aac8;       /* title bar / folders */
+  --red: #f2552c;         /* title bar / accents */
+  --sand: #f2c27c;        /* title bar / buttons */
+  --night: #29233f;       /* dark screen */
+  --cream: #fff4e3;       /* stars, light text */
+  --line: 2.5px;          /* outline thickness */
+  --shadow: 5px 5px 0 var(--ink);
+  --font-body: 'Josefin Sans', sans-serif;
+  --font-ui: 'Fredoka', sans-serif;
+  --gap: 22px;
+}
+/* ================================================= */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  min-height: 100vh;
+  padding: 32px 16px 96px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Sparkle background */
+.sparkles span {
+  position: absolute; color: var(--cream); font-size: 22px; pointer-events: none;
+  text-shadow: 0 0 0 var(--ink);
+}
+.sparkles i {
+  position: absolute; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cream); border: 1.5px solid var(--ink);
+}
+
+.desktop {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
+  position: relative;
+}
+.span-2 { grid-column: span 2; }
+@media (max-width: 860px) {
+  .desktop { grid-template-columns: 1fr; }
+  .span-2 { grid-column: auto; }
+}
+
+/* ---------- Window component ---------- */
+.win {
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column;
+}
+.titlebar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  border-bottom: var(--line) solid var(--ink);
+  background: var(--lilac);
+}
+.win--red .titlebar { background: var(--red); }
+.win--sand .titlebar { background: var(--sand); }
+.titlebar .name { margin-left: 8px; font-family: var(--font-ui); font-size: 14px; }
+.win--red .titlebar .name { color: var(--cream); }
+.ctrl {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: grid; place-items: center;
+  font: 600 11px/1 var(--font-ui);
+}
+.ctrl.x { background: var(--red); }
+.ctrl.min, .ctrl.max { background: var(--sand); }
+.body { padding: 18px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+/* ---------- Controls ---------- */
+.field {
+  width: 100%; background: var(--paper);
+  border: 2px solid var(--ink); padding: 8px 10px;
+  font: inherit; color: var(--ink); outline: none;
+}
+.field:focus { background: var(--cream); }
+.btn {
+  align-self: center; min-width: 110px;
+  background: var(--sand); color: var(--ink);
+  border: 2px solid var(--ink);
+  font: 600 15px var(--font-ui);
+  padding: 7px 18px; cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .08s, box-shadow .08s;
+}
+.btn:hover { background: var(--red); color: var(--cream); }
+.btn:active { transform: translate(3px, 3px); box-shadow: none; }
+.btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: auto; }
+
+/* ---------- Profile ---------- */
+.profile { display: flex; gap: 14px; align-items: center; }
+.avatar {
+  width: 60px; height: 60px; flex-shrink: 0; border-radius: 50%;
+  background: var(--sand); border: 2px solid var(--ink);
+  display: grid; place-items: center;
+  font: 600 26px var(--font-ui);
+  box-shadow: inset 0 0 0 6px var(--red);
+}
+.profile .who { font-family: var(--font-ui); font-size: 20px; }
+.online { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #5bd17a; border: 1.5px solid var(--ink); margin-right: 4px; }
+
+/* ---------- Alert (stacked windows) ---------- */
+.stack { position: relative; padding: 0 0 12px 12px; }
+.stack::before, .stack::after {
+  content: ""; position: absolute; border: var(--line) solid var(--ink);
+  background: var(--paper);
+}
+.stack::before { inset: 12px 0 0 12px; transform: translate(-12px, -12px); background: var(--lilac); }
+.stack::after { inset: 6px 6px 6px 6px; transform: translate(-6px, -6px); }
+.stack .win { position: relative; z-index: 1; height: 100%; }
+.alert-icon {
+  width: 48px; height: 48px; border-radius: 50%; margin: 0 auto;
+  background: var(--red); border: 2px solid var(--ink);
+  display: grid; place-items: center;
+  font: 600 28px var(--font-ui); color: var(--ink);
+}
+.center { text-align: center; }
+.big { font: 600 30px var(--font-ui); }
+
+/* ---------- Sync / progress ---------- */
+.icons { display: flex; justify-content: space-around; align-items: center; }
+.icon-box {
+  width: 44px; height: 44px; border: 2px solid var(--ink);
+  display: grid; place-items: center; font: 600 18px var(--font-ui);
+}
+.icon-box.round { border-radius: 50%; background: var(--red); color: var(--cream); }
+.icon-box.doc { background: var(--cream); transform: rotate(-8deg); }
+.icon-box.folder { background: var(--sand); border-radius: 3px 3px 0 0; }
+.progress {
+  height: 26px; border: 2px solid var(--ink); background: var(--sand); padding: 3px;
+}
+.progress i {
+  display: block; height: 100%; width: 72%;
+  background: repeating-linear-gradient(90deg, var(--lilac) 0 10px, var(--ink) 10px 12px, var(--sand) 12px 15px);
+}
+
+/* ---------- Media player chart ---------- */
+.screen {
+  background:
+    radial-gradient(circle, var(--cream) 0.6px, transparent 1.2px) 0 0 / 22px 22px,
+    radial-gradient(circle, var(--cream) 0.5px, transparent 1px) 11px 7px / 31px 31px,
+    var(--night);
+  border-bottom: var(--line) solid var(--ink);
+  padding: 14px 14px 8px;
+}
+.screen svg { width: 100%; height: auto; display: block; }
+.screen text { fill: var(--cream); font-family: var(--font-ui); font-size: 11px; opacity: .8; }
+.player-bar { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.slider { position: relative; height: 4px; background: var(--sand); border: 1.5px solid var(--ink); border-radius: 4px; }
+.slider b {
+  position: absolute; top: 50%; left: 70%; width: 14px; height: 14px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: var(--red); border: 2px solid var(--ink);
+}
+.transport { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.transport .keys { display: flex; border: 2px solid var(--ink); }
+.transport .keys button {
+  width: 30px; height: 26px; background: var(--sand); color: var(--red);
+  border: 0; border-right: 2px solid var(--ink); font: 600 11px var(--font-ui); cursor: pointer;
+}
+.transport .keys button:last-child { border-right: 0; }
+.transport .keys button.on, .transport .keys button:hover { background: var(--red); color: var(--cream); }
+.transport .label { font-family: var(--font-ui); font-size: 14px; }
+
+/* ---------- Folders (top games) ---------- */
+.grid-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 16px 12px; }
+.file { text-align: center; font-size: 13px; cursor: pointer; }
+.file .hrs { display: block; font: 600 12px var(--font-ui); color: var(--red); }
+.folder {
+  position: relative; height: 54px; margin: 10px 4px 6px;
+  background: var(--lilac); border: 2px solid var(--ink);
+}
+.folder::before {
+  content: ""; position: absolute; left: -2px; top: -11px; width: 40%; height: 10px;
+  background: var(--lilac); border: 2px solid var(--ink); border-bottom: 0; border-radius: 3px 3px 0 0;
+}
+.file:hover .folder, .file:hover .folder::before { background: var(--sand); }
+.doc-file {
+  height: 62px; margin: 2px 14px 6px; border: 2px solid var(--ink); position: relative;
+  background: var(--sand); display: grid; place-items: center;
+  clip-path: polygon(0 0, 75% 0, 100% 20%, 100% 100%, 0 100%);
+  font: 600 18px var(--font-ui);
+}
+.doc-file.red { background: var(--red); color: var(--cream); }
+.doc-file.lilac { background: var(--lilac); }
+
+/* ---------- Radio options ---------- */
+.radios { display: flex; flex-direction: column; gap: 10px; }
+.radios label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.radios input { appearance: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); background: var(--sand); cursor: pointer; }
+.radios input:checked { background: radial-gradient(var(--ink) 35%, var(--sand) 40%); }
+
+/* ---------- Taskbar ---------- */
+.taskbar {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--lilac); border-top: var(--line) solid var(--ink);
+  font-family: var(--font-ui);
+  z-index: 10;
+}
+.start {
+  background: var(--red); color: var(--cream);
+  border: 2px solid var(--ink); border-radius: 14px;
+  padding: 4px 16px; font: 600 15px var(--font-ui);
+  box-shadow: 2px 2px 0 var(--ink); cursor: pointer;
+}
+.chip { background: var(--paper); border: 2px solid var(--ink); padding: 3px 10px; font-size: 14px; white-space: nowrap; }
+.taskbar .spacer { flex: 1; }
+@media (max-width: 560px) { .chip.hide-sm { display: none; } }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="sparkles" aria-hidden="true">
+  <span style="top:30px;left:8%">✦</span><span style="top:90px;right:6%">✦</span>
+  <span style="top:420px;left:2%">✦</span><span style="top:610px;right:3%">✦</span>
+  <span style="top:880px;left:12%">✦</span><span style="top:1040px;right:18%">✦</span>
+  <i style="top:60px;left:30%"></i><i style="top:350px;right:2%"></i>
+  <i style="top:760px;left:4%"></i><i style="top:980px;right:40%"></i>
+</div>
+
+<main class="desktop">
+
+  <!-- Search -->
+  <section class="win">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="ctrl min">–</span><span class="ctrl max">□</span><span class="name">scan.exe</span></div>
+    <div class="body">
+      <input class="field" placeholder="Steam ID or vanity URL" value="76561198000000000">
+      <input class="field" placeholder="Compare with a friend (optional)">
+      <button class="btn">Scan</button>
+    </div>
+  </section>
+
+  <!-- Profile -->
+  <section class="win win--red">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="name">profile.exe</span></div>
+    <div class="body">
+      <div class="profile">
+        <div class="avatar">A</div>
+        <div>
+          <div class="who">Abanoub</div>
+          <div><span class="online"></span>Online · Level 24</div>
+          <div>Member since 2017</div>
+        </div>
+      </div>
+      <button class="btn">Load library</button>
+    </div>
+  </section>
+
+  <!-- Alert -->
+  <div class="stack">
+    <section class="win">
+      <div class="titlebar"><span class="ctrl x">×</span><span class="name">warning.exe</span></div>
+      <div class="body center">
+        <div class="alert-icon">!</div>
+        <div><span class="big">42</span><br>games never launched</div>
+        <button class="btn">Ok</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Sync -->
+  <section class="win win--sand">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="ctrl min">–</span><span class="ctrl max">□</span><span class="name">sync.exe</span></div>
+    <div class="body">
+      <div class="icons">
+        <div class="icon-box round">S</div>
+        <div class="icon-box doc">≡</div>
+        <div class="icon-box folder"></div>
+      </div>
+      <div>Syncing library… 99 / 137 games</div>
+      <div class="progress"><i></i></div>
+      <button class="btn">Cancel</button>
+    </div>
+  </section>
+
+  <!-- Chart as media player -->
+  <section class="win win--red span-2">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="ctrl min">–</span><span class="ctrl max">□</span><span class="name">playtime_history.wmv</span></div>
+    <div class="screen">
+      <svg viewBox="0 0 600 190" role="img" aria-label="Hours played per month">
+        <g fill="none" stroke="#fff4e3" stroke-opacity=".15" stroke-dasharray="3 6">
+          <line x1="0" y1="40" x2="600" y2="40"/><line x1="0" y1="95" x2="600" y2="95"/><line x1="0" y1="150" x2="600" y2="150"/>
+        </g>
+        <g stroke="#3b2232" stroke-width="2">
+          <rect x="25"  y="110" width="50" height="50" fill="#d8aac8"/>
+          <rect x="120" y="80"  width="50" height="80" fill="#d8aac8"/>
+          <rect x="215" y="98"  width="50" height="62" fill="#d8aac8"/>
+          <rect x="310" y="55"  width="50" height="105" fill="#f2c27c"/>
+          <rect x="405" y="70"  width="50" height="90" fill="#d8aac8"/>
+          <rect x="500" y="25"  width="50" height="135" fill="#f2552c"/>
+        </g>
+        <text x="38" y="180">JUN</text><text x="133" y="180">JUL</text><text x="227" y="180">AUG</text>
+        <text x="322" y="180">SEP</text><text x="417" y="180">OCT</text><text x="512" y="180">NOV</text>
+        <text x="502" y="16">128 h</text>
+      </svg>
+    </div>
+    <div class="player-bar">
+      <div class="slider"><b></b></div>
+      <div class="transport">
+        <div class="keys">
+          <button>⏮</button><button class="on">6M</button><button>1Y</button><button>ALL</button><button>⏭</button>
+        </div>
+        <span class="label">2,481 h total</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top games as folders -->
+  <section class="win win--red span-2">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="ctrl min">–</span><span class="ctrl max">□</span><span class="name">C:\top_games</span></div>
+    <div class="body">
+      <div class="grid-files">
+        <div class="file"><div class="folder"></div>Counter-Strike 2<span class="hrs">812 h</span></div>
+        <div class="file"><div class="folder"></div>Elden Ring<span class="hrs">344 h</span></div>
+        <div class="file"><div class="folder"></div>Cyberpunk 2077<span class="hrs">221 h</span></div>
+        <div class="file"><div class="folder"></div>Sifu<span class="hrs">96 h</span></div>
+        <div class="file"><div class="doc-file red">2w</div>Hades<span class="hrs">+6.2 h</span></div>
+        <div class="file"><div class="doc-file">2w</div>Celeste<span class="hrs">+4.0 h</span></div>
+        <div class="file"><div class="doc-file lilac">2w</div>Terraria<span class="hrs">+8.3 h</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sort options -->
+  <section class="win">
+    <div class="titlebar"><span class="ctrl x">×</span><span class="ctrl min">–</span><span class="ctrl max">□</span><span class="name">sort.exe</span></div>
+    <div class="body">
+      <div class="radios">
+        <label><input type="radio" name="sort" checked> Most played</label>
+        <label><input type="radio" name="sort"> Recently played</label>
+        <label><input type="radio" name="sort"> Never played</label>
+        <label><input type="radio" name="sort"> A to Z</label>
+      </div>
+      <div class="btn-row">
+        <button class="btn" style="min-width:70px">Ok</button>
+        <button class="btn" style="min-width:70px">Help</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="taskbar">
+  <button class="start">▶ start</button>
+  <span class="chip">137 games</span>
+  <span class="chip hide-sm">18.5 h this fortnight</span>
+  <span class="spacer"></span>
+  <span class="chip">03:41</span>
+</footer>
+
+</body>
+</html>

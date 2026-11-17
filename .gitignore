@@ -1,0 +1,20 @@
+# The Steam API key lives in .env. It must never end up on GitHub.
+.env
+
+# Local data: the SQLite database with the play history
+data/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# PyInstaller output (see build_exe.bat)
+build/
+dist/
+
+# Editor and assistant settings, not part of the app
+.vscode/
+.claude/
+CLAUDE.md
