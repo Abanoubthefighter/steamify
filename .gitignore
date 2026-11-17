@@ -3,6 +3,7 @@
 
 # Local data: the SQLite database with the play history
 data/
+crash.log
 
 # Python
 .venv/
