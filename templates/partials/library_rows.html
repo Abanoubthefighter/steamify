@@ -1,0 +1,24 @@
+{#
+  The list inside library.exe plus its status bar. Rendered with the page, and
+  again on its own whenever the sort, the search box or "show all" changes.
+#}
+{% from "partials/game_row.html" import game_row %}
+{% if library.rows %}
+<ul class="rows scroll" role="list">
+  {% for game in library.rows %}
+  {{ game_row(game) }}
+  {% endfor %}
+</ul>
+{% elif library.query %}
+<p class="empty">Nothing called “{{ library.query }}” in here.</p>
+{% elif library.total %}
+<p class="empty">Nothing fits this filter. Every game has been played, apparently.</p>
+{% else %}
+<p class="empty">This library is empty. Not even a free-to-play?</p>
+{% endif %}
+<div class="statusbar">
+  <span>{{ library.match_count | plural("item") }}{% if library.rows | length < library.match_count %}, showing {{ library.rows | length }}{% endif %}</span>
+  {% if library.rows | length < library.match_count %}
+  <button class="link" type="button" data-library-all>Show all</button>
+  {% endif %}
+</div>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.name }} · Steam Stats Tracker{% endblock %}
+
+{% block desktop %}
+{# The data-* values are how the page's JavaScript learns who is on screen. #}
+<main class="desktop" data-desktop
+      data-player="{{ player.steam_id }}"
+      data-friend="{{ friend.steam_id if friend }}"
+      data-base="{{ url_for('dashboard', steam_id=player.steam_id) }}"
+      data-autosync="{{ 'true' if autosync else 'false' }}">
+  <h1 class="sr-only">Steam stats for {{ player.name }}</h1>
+
+  {# One file per window. Reorder these lines to rearrange the desktop. #}
+  {% include "windows/scan.html" %}
+  {% include "windows/profile.html" %}
+  {% include "windows/warning.html" %}
+  {% include "windows/sync.html" %}
+  {% include "windows/media.html" %}
+  {% include "windows/top_games.html" %}
+  {% include "windows/sort.html" %}
+  {% include "windows/library.html" %}
+  {% include "windows/versus.html" %}
+</main>
+{% endblock %}
+
+{% block chips %}
+<span class="chip">{{ summary.game_count | plural("game") }}</span>
+<span class="chip chip--roomy">{{ summary.recent_minutes | hours }} this fortnight</span>
+{% endblock %}
+
+{% block templates %}
+<template data-popup="sort-help" data-title="help.txt">
+  <p class="big">Sorting</p>
+  <dl class="facts facts--stacked">
+    <div><dt>Most played</dt><dd>Biggest time sinks first.</dd></div>
+    <div><dt>Recently played</dt><dd>What you opened last, newest first.</dd></div>
+    <div><dt>Never played</dt><dd>Only the games you own but never launched.</dd></div>
+    <div><dt>A to Z</dt><dd>The whole library in alphabetical order.</dd></div>
+  </dl>
+  <button class="btn" type="button" data-action="close" data-autofocus>Ok</button>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}" defer></script>
+{% endblock %}

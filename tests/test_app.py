@@ -1,0 +1,208 @@
+"""The routes, exercised through Flask's test client. Steam itself is always faked."""
+
+import json
+
+import pytest
+
+import api
+import app as app_module
+import config
+import demo
+import storage
+from conftest import FAKE_KEY, make_game, make_profile
+
+ME = "76561198000000001"
+FRIEND = "76561198000000002"
+DEMO_PAGE = f"/player/{demo.PLAYER_ID}"
+
+
+@pytest.fixture
+def client(monkeypatch):
+    monkeypatch.setattr(demo, "STEP_DELAY", 0)
+    app_module.prepare()
+    return app_module.app.test_client()
+
+
+@pytest.fixture
+def steam(monkeypatch):
+    """A pretend Steam with two players. FRIEND's library is private."""
+
+    def owned_games(steam_id):
+        if steam_id == FRIEND:
+            raise api.PrivateProfile()
+        return [make_game(730, "Counter-Strike 2", hours=10), make_game(620, "Portal 2")]
+
+    monkeypatch.setattr(api, "resolve_steam_id", lambda text: {"me": ME, "friend": FRIEND}[text])
+    monkeypatch.setattr(api, "get_player", lambda steam_id: make_profile(steam_id, name=f"player {steam_id[-1]}"))
+    monkeypatch.setattr(api, "get_level", lambda steam_id: 7)
+    monkeypatch.setattr(api, "get_owned_games", owned_games)
+
+
+def scan(client, **form):
+    """Post to /scan and return the streamed lines as dicts."""
+    reply = client.post("/scan", data=form)
+    assert reply.status_code == 200
+    return [json.loads(line) for line in reply.text.splitlines()]
+
+
+# --- pages ---
+
+
+def test_first_run_opens_the_demo_player(client):
+    reply = client.get("/")
+    assert reply.status_code == 302
+    assert reply.headers["Location"] == f"{DEMO_PAGE}?vs={demo.FRIEND_ID}"
+
+
+def test_dashboard_has_every_window(client):
+    page = client.get(f"{DEMO_PAGE}?vs={demo.FRIEND_ID}").text
+    for title in ("scan.exe", "profile.exe", "warning.exe", "sync.exe", "playtime_history.wmv",
+                  "C:\\top_games", "versus.exe", "library.exe", "sort.exe"):
+        assert title in page, f"{title} is missing from the dashboard"
+    assert "player_one" in page and "player_two" in page
+    assert 'id="tracks-data"' in page
+
+
+def test_demo_views_are_not_remembered(client):
+    client.get(DEMO_PAGE)
+    assert storage.get_setting("last_player") is None
+
+
+def test_unknown_player_gets_the_themed_404(client):
+    reply = client.get("/player/nobody")
+    assert reply.status_code == 404
+    assert "error.exe" in reply.text and "File not found" in reply.text
+
+
+def test_names_from_steam_are_escaped(client):
+    storage.save_snapshot(make_profile(ME, name="<script>alert(1)</script>"), [make_game(1, "<b>Bold</b> Game", hours=3)])
+    page = client.get(f"/player/{ME}").text
+    assert "<script>alert(1)</script>" not in page
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
+    assert "<b>Bold</b>" not in page
+
+
+def test_security_headers_are_on_every_reply(client):
+    headers = client.get(DEMO_PAGE).headers
+    assert "default-src 'self'" in headers["Content-Security-Policy"]
+    assert headers["X-Content-Type-Options"] == "nosniff"
+    assert headers["Referrer-Policy"] == "no-referrer"
+
+
+# --- library.exe and the game popup ---
+
+
+def test_library_rows_can_be_sorted_searched_and_expanded(client):
+    first_page = client.get(f"{DEMO_PAGE}/library").text
+    assert first_page.count('class="row"') == config.LIBRARY_PAGE_SIZE
+    assert "Show all" in first_page
+
+    everything = client.get(f"{DEMO_PAGE}/library?all=1").text
+    assert everything.count('class="row"') == len(demo.FAVOURITES) + len(demo.SHELF)
+
+    never = client.get(f"{DEMO_PAGE}/library?sort=never").text
+    assert "Counter-Strike 2" not in never
+
+    search = client.get(f"{DEMO_PAGE}/library?q=elden").text
+    assert search.count('class="row"') == 1 and "Elden Ring" in search
+
+    assert "Nothing called" in client.get(f"{DEMO_PAGE}/library?q=zzzz").text
+
+
+def test_game_card(client):
+    game = storage.get_library(demo.PLAYER_ID)[0]
+    card = client.get(f"{DEMO_PAGE}/game/{game['app_id']}").text
+    assert game["name"] in card
+    assert "Store page" not in card  # demo games have no real store page
+    assert client.get(f"{DEMO_PAGE}/game/424242").status_code == 404
+
+
+def test_real_games_link_to_their_art_and_store_page(client):
+    storage.save_snapshot(make_profile(ME), [{**make_game(730, "Counter-Strike 2", hours=10), "icon": "abc123"}])
+    card = client.get(f"/player/{ME}/game/730").text
+    assert "store.steampowered.com/app/730" in card and "/apps/730/header.jpg" in card
+    assert "/apps/730/abc123.jpg" in client.get(f"/player/{ME}/library").text
+
+
+# --- scanning ---
+
+
+def test_scan_streams_progress_then_points_at_the_dashboard(client, steam):
+    events = scan(client, player="me")
+    assert [event["step"] for event in events[:-1]] == [1, 2, 3, 4]
+    assert all(event["steps"] == 4 for event in events[:-1])
+    assert events[-1] == {"done": True, "gained": 0, "url": f"/player/{ME}"}
+
+    assert client.get(f"/player/{ME}").status_code == 200
+    assert client.get("/").headers["Location"] == f"/player/{ME}"  # remembered for next launch
+
+
+def test_scan_without_a_key_explains_what_is_missing(client, monkeypatch):
+    monkeypatch.setattr(config, "STEAM_API_KEY", "")
+    events = scan(client, player="76561197960287930")
+    assert events[-1]["error"]["code"] == "missing-key"
+    assert events[-1]["url"] is None
+
+
+def test_scan_with_nothing_typed(client):
+    assert scan(client, player="  ")[-1]["error"]["code"] == "empty"
+
+
+def test_a_private_friend_does_not_block_the_players_own_dashboard(client, steam):
+    events = scan(client, player="me", friend="friend")
+    assert events[4]["label"].startswith("Friend: ")
+    assert events[-1]["error"]["code"] == "private"
+    assert events[-1]["url"] == f"/player/{ME}"
+
+
+def test_the_demo_player_can_be_synced_without_a_key(client, monkeypatch):
+    monkeypatch.setattr(config, "STEAM_API_KEY", "")
+    events = scan(client, player=demo.PLAYER_ID, friend=demo.FRIEND_ID, force="1")
+    assert len(events) == 9  # two players, four steps each, then the result
+    assert events[-1]["url"] == f"{DEMO_PAGE}?vs={demo.FRIEND_ID}"
+
+
+def test_an_unexpected_crash_still_ends_the_stream_politely(client, steam, monkeypatch):
+    monkeypatch.setattr(storage, "save_snapshot", lambda *args, **kwargs: 1 / 0)
+    assert scan(client, player="me")[-1]["error"]["code"] == "steam-error"
+
+
+# --- saving an API key ---
+
+
+def test_key_must_look_like_a_key(client):
+    reply = client.post("/settings/key", data={"key": "nope"})
+    assert reply.status_code == 400 and "32 letters" in reply.json["message"]
+
+
+def test_key_is_checked_with_steam_before_saving(client, monkeypatch):
+    monkeypatch.setattr(config, "STEAM_API_KEY", "")
+    monkeypatch.setattr(api, "key_works", lambda key: False)
+    reply = client.post("/settings/key", data={"key": FAKE_KEY})
+    assert reply.status_code == 502 and reply.json["code"] == "bad-key"
+    assert config.STEAM_API_KEY == "" and not config.ENV_FILE.exists()
+
+
+def test_a_working_key_is_written_to_the_env_file(client, monkeypatch):
+    monkeypatch.setattr(config, "STEAM_API_KEY", "")
+    monkeypatch.setattr(api, "key_works", lambda key: True)
+    reply = client.post("/settings/key", data={"key": FAKE_KEY})
+    assert reply.json == {"ok": True}
+    assert config.STEAM_API_KEY == FAKE_KEY
+    assert FAKE_KEY in config.ENV_FILE.read_text()
+
+
+def test_the_key_never_appears_in_a_page(client):
+    assert FAKE_KEY not in client.get(DEMO_PAGE).text
+
+
+# --- only our own window may talk to the server ---
+
+
+def test_posts_from_other_websites_are_refused(client):
+    reply = client.post("/scan", data={"player": "me"}, headers={"Origin": "https://evil.example"})
+    assert reply.status_code == 403
+
+
+def test_requests_for_another_host_are_refused(client):
+    assert client.get(DEMO_PAGE, headers={"Host": "evil.example"}).status_code == 403

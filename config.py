@@ -44,6 +44,8 @@ STEAM_KEY_PAGE = "https://steamcommunity.com/dev/apikey"
 STEAM_STORE_PAGE = "https://store.steampowered.com/app/{app_id}"
 STEAM_ICON_URL = "https://media.steampowered.com/steamcommunity/public/images/apps/{app_id}/{icon}.jpg"
 STEAM_ART_URL = "https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+# The only outside hosts the page may load pictures from (avatars, icons, game art).
+IMAGE_HOSTS = "https://*.steamstatic.com https://*.steampowered.com https://*.akamaihd.net"
 
 REQUEST_TIMEOUT = 8     # seconds to wait for Steam before giving up
 CACHE_MINUTES = 15      # a player scanned this recently isn't fetched again
@@ -83,8 +85,9 @@ MAX_ALERTS = 5
 # --- Desktop window ----------------------------------------------------------
 
 WINDOW_TITLE = "Steam Stats Tracker"
-WINDOW_SIZE = (1240, 880)
+WINDOW_SIZE = (1280, 880)   # what the window opens at, if the screen is big enough
 WINDOW_MIN_SIZE = (720, 560)
+SCREEN_MARGIN = 80          # room always left around the window on small screens
 
 # --- Local server ------------------------------------------------------------
 

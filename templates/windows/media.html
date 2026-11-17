@@ -1,0 +1,37 @@
+{#
+  The media player: every chart is a "track" and the buttons under the screen
+  switch tracks and views. charts.py prepares the data (it arrives as JSON at
+  the bottom of this file) and static/js/charts.js draws it.
+#}
+{% from "partials/window.html" import window %}
+{% call window("media", tracks[0].file, color="red", wide=true) %}
+<div class="screen" data-media>
+  <div class="screen__chart" data-chart-box>
+    <canvas data-chart role="img" aria-label="Chart"></canvas>
+  </div>
+  <p class="screen__empty" data-chart-empty hidden></p>
+  <div class="screen__table scroll" data-chart-table hidden></div>
+</div>
+
+<div class="player-bar">
+  <div class="slider" aria-hidden="true"><span class="slider__thumb" data-track-thumb></span></div>
+  <div class="transport">
+    <div class="keys" role="group" aria-label="Chart controls">
+      <button type="button" data-track="-1" aria-label="Previous chart" title="Previous chart">
+        <svg viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M0 0h2v10H0zM12 0v10L3 5z" fill="currentColor"/></svg>
+      </button>
+      <span class="keys__views" data-view-keys></span>
+      <button type="button" data-table-toggle aria-pressed="false" aria-label="Show the numbers as a table" title="Show the numbers as a table">
+        <svg viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M0 0h12v2H0zM0 4h12v2H0zM0 8h12v2H0z" fill="currentColor"/></svg>
+      </button>
+      <button type="button" data-track="1" aria-label="Next chart" title="Next chart">
+        <svg viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><path d="M10 0h2v10h-2zM0 0v10l9-5z" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <span class="legend" data-chart-legend></span>
+    <span class="transport__label" data-chart-caption>{{ tracks[0].caption }}</span>
+  </div>
+</div>
+
+<script type="application/json" id="tracks-data">{{ tracks | tojson }}</script>
+{% endcall %}

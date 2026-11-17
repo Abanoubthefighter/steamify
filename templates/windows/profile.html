@@ -1,0 +1,33 @@
+{# profile.exe: who this is, plus the three headline numbers. #}
+{% from "partials/window.html" import window %}
+{% from "partials/avatar.html" import avatar %}
+{% from "partials/stat_tile.html" import stat_tile %}
+{% call window("profile", "profile.exe", color="red", controls="close") %}
+<div class="body">
+  <div class="profile">
+    {{ avatar(player) }}
+    <div class="profile__text">
+      <div class="profile__name">{{ player.name }}</div>
+      <div>
+        <span class="status-dot{{ ' status-dot--off' if player.status == 'Offline' }}" aria-hidden="true"></span>
+        {{- player.status }}{% if player.level is not none %} · Level {{ player.level }}{% endif %}
+      </div>
+      {% if player.created %}
+      <div>Member since {{ player.created | year }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="tiles">
+    {{ stat_tile(summary.total_minutes | hours, "played") }}
+    {{ stat_tile(summary.game_count, "games") }}
+    {{ stat_tile(summary.played_percent ~ "%", "opened") }}
+  </div>
+
+  {% if player.profile_url %}
+  <a class="btn" href="{{ player.profile_url }}" target="_blank" rel="noopener">View on Steam</a>
+  {% elif is_demo %}
+  <p class="note center">A made-up player, here to show you around.</p>
+  {% endif %}
+</div>
+{% endcall %}

@@ -1,0 +1,19 @@
+{#
+  sort.exe: picks the order of library.exe. The choices come from
+  stats.SORT_ORDERS, so adding one there adds a radio button here.
+#}
+{% from "partials/window.html" import window %}
+{% call window("sort", "sort.exe") %}
+<form class="body" data-sort-form>
+  <fieldset class="radios">
+    <legend class="label">Show the library as</legend>
+    {% for key, label in sort_choices %}
+    <label><input type="radio" name="sort" value="{{ key }}"{{ ' checked' if key == library.order }}> {{ label }}</label>
+    {% endfor %}
+  </fieldset>
+  <div class="btn-row">
+    <button class="btn btn--small" type="submit">Ok</button>
+    <button class="btn btn--small" type="button" data-popup-open="sort-help">Help</button>
+  </div>
+</form>
+{% endcall %}

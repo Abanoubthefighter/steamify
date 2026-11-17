@@ -1,0 +1,21 @@
+{#
+  library.exe: every game, in a list. sort.exe decides the order and the box
+  at the top filters by name. Both ask the server for fresh rows
+  (partials/library_rows.html) instead of reloading the page.
+#}
+{% from "partials/window.html" import window %}
+{% call window("library", "library.exe", wide=true) %}
+<div class="body body--flush">
+  <div class="toolbar">
+    <label class="sr-only" for="library-search">Search your games</label>
+    <input class="field" id="library-search" type="search" placeholder="Search {{ summary.game_count | plural('game') }}"
+           autocomplete="off" spellcheck="false" data-library-search>
+  </div>
+  <div class="rows-header" aria-hidden="true">
+    <span>Name</span><span>Last opened</span><span>Played</span>
+  </div>
+  <div class="rows-area" data-library-rows aria-live="polite">
+    {% include "partials/library_rows.html" %}
+  </div>
+</div>
+{% endcall %}

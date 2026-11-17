@@ -1,0 +1,57 @@
+{#
+  versus.exe: you against a friend. Each shared game gets one bar that is
+  split between the two of you by hours played.
+#}
+{% from "partials/window.html" import window %}
+{% from "partials/avatar.html" import avatar %}
+{% call window("versus", "versus.exe", color="sand") %}
+<div class="body">
+  {% if versus %}
+  <div class="versus">
+    <div class="versus__side">
+      {{ avatar(player, small=true) }}
+      <span class="versus__name">{{ player.name }}</span>
+      <span class="versus__hours">{{ summary.total_minutes | hours }}</span>
+      <span class="note">{{ summary.game_count | plural("game") }}</span>
+    </div>
+    <span class="versus__badge" aria-hidden="true">vs</span>
+    <div class="versus__side">
+      {{ avatar(versus.friend, small=true) }}
+      <span class="versus__name">{{ versus.friend.name }}</span>
+      <span class="versus__hours">{{ versus.theirs.total_minutes | hours }}</span>
+      <span class="note">{{ versus.theirs.game_count | plural("game") }}</span>
+    </div>
+  </div>
+  <p class="note center">{{ versus.caption }}</p>
+
+  {% if versus.shared %}
+  <p class="label">{{ versus.shared_count | plural("game") }} in common. The biggest:</p>
+  <ul class="duels" role="list">
+    {% for game in versus.shared %}
+    <li class="duel">
+      <span class="duel__name">{{ game.name }}</span>
+      <span class="duel__bar" style="--mine: {{ game.my_share }}%" aria-hidden="true"></span>
+      <span class="duel__numbers">
+        <span><span class="sr-only">{{ player.name }}: </span>{{ game.my_minutes | hours }}</span>
+        <span><span class="sr-only">{{ versus.friend.name }}: </span>{{ game.their_minutes | hours }}</span>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Not a single game in common. You two live in different worlds.</p>
+  {% endif %}
+
+  {% else %}
+  <div class="versus">
+    <div class="versus__side">{{ avatar(player, small=true) }}<span class="versus__name">{{ player.name }}</span></div>
+    <span class="versus__badge" aria-hidden="true">vs</span>
+    <div class="versus__side"><span class="avatar avatar--small avatar--empty" aria-hidden="true">?</span><span class="versus__name">nobody yet</span></div>
+  </div>
+  <p class="center">No challenger yet. Add a friend's Steam ID in scan.exe to see who has sunk more hours.</p>
+  <div class="btn-row">
+    <button class="btn" type="button" data-open-window="scan" data-then-focus="#scan-friend">Add a friend</button>
+  </div>
+  {% endif %}
+</div>
+{% endcall %}

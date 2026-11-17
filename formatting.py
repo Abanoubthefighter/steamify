@@ -51,6 +51,13 @@ def time_ago(timestamp: int | None, now: float | None = None) -> str:
     return f"{plural(int(seconds // (365 * DAY)), 'year')} ago"
 
 
+def last_played(game: dict, now: float | None = None) -> str:
+    """When a game was last opened, in words. Steam has no date for some very old sessions."""
+    if game["last_played"]:
+        return time_ago(game["last_played"], now)
+    return "a long time ago" if game["minutes"] else "never"
+
+
 def long_date(timestamp: int | None) -> str:
     """A unix time as "12 Mar 2024"."""
     if not timestamp:

@@ -1,0 +1,25 @@
+{#
+  warning.exe: a stack of popups. All of them are in the page, one is visible,
+  and "Ok" flips to the next (static/js/alerts.js). The outlines behind the
+  window show how many are still waiting underneath.
+#}
+{% from "partials/window.html" import window %}
+{% set waiting = [[alerts | length - 1, 2] | min, 0] | max %}
+{% call window("warning", "warning.exe", controls="close", stack=waiting) %}
+<div class="body center" data-alerts>
+  {% for alert in alerts %}
+  <div class="alert" data-alert{{ ' hidden' if not loop.first }}>
+    <div class="alert__icon" aria-hidden="true">!</div>
+    <p><span class="big">{{ alert.big }}</span><br>{{ alert.text }}</p>
+    <p class="note">{{ alert.caption }}</p>
+  </div>
+  {% else %}
+  <div class="alert" data-alert>
+    <div class="alert__icon alert__icon--calm" aria-hidden="true"></div>
+    <p><span class="big">All clear</span><br>nothing to warn you about</p>
+    <p class="note">Scan a library with a few games in it and I'll find something.</p>
+  </div>
+  {% endfor %}
+  <button class="btn" type="button" data-alert-ok>Ok</button>
+</div>
+{% endcall %}

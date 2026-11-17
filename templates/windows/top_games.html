@@ -1,0 +1,33 @@
+{#
+  C:\top_games: the most played games as folders, then what was played in the
+  last two weeks as documents. Clicking either opens the game's details.
+#}
+{% from "partials/window.html" import window %}
+{% call window("top", "C:\\top_games", color="red", wide=true) %}
+<div class="body">
+  {% if top_games %}
+  <ul class="grid-files" role="list">
+    {% for game in top_games %}
+    <li>
+      <button class="file" type="button" data-game="{{ game.app_id }}" title="{{ game.name }}">
+        <span class="folder" aria-hidden="true"></span>
+        <span class="file__name">{{ game.name }}</span>
+        <span class="file__hours">{{ game.minutes | hours }}</span>
+      </button>
+    </li>
+    {% endfor %}
+    {% for game in recent_games %}
+    <li>
+      <button class="file" type="button" data-game="{{ game.app_id }}" title="{{ game.name }}, last two weeks">
+        <span class="doc-file doc-file--{{ loop.cycle('red', 'sand', 'lilac') }}" aria-hidden="true">2w</span>
+        <span class="file__name">{{ game.name }}</span>
+        <span class="file__hours">+{{ game.minutes_2weeks | hours }}<span class="sr-only"> in the last two weeks</span></span>
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">This folder is empty. Nothing in the library has been played yet.</p>
+  {% endif %}
+</div>
+{% endcall %}

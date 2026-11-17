@@ -1,0 +1,7 @@
+{# One headline number with a word under it: {{ stat_tile("2,481 h", "played") }} #}
+{% macro stat_tile(value, label) %}
+<div class="tile">
+  <span class="tile__value">{{ value }}</span>
+  <span class="tile__label">{{ label }}</span>
+</div>
+{% endmacro %}

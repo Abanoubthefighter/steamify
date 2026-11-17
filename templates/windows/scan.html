@@ -1,0 +1,42 @@
+{#
+  scan.exe: the "login" window. It has two forms and shows one at a time:
+  the scan form once an API key is saved, the key form before that.
+#}
+{% from "partials/window.html" import window %}
+{% call window("scan", "scan.exe") %}
+<div class="body">
+
+  <form class="form" action="{{ url_for('scan') }}" method="post" data-scan-form{{ ' hidden' if not has_key }}>
+    <div>
+      <label class="label" for="scan-player">Steam ID or profile link</label>
+      <input class="field" id="scan-player" name="player" value="{{ scan_defaults.player }}"
+             placeholder="7656119… or a custom URL name" required autocomplete="off" spellcheck="false">
+    </div>
+    <div>
+      <label class="label" for="scan-friend">Compare with a friend <span class="label__hint">(optional)</span></label>
+      <input class="field" id="scan-friend" name="friend" value="{{ scan_defaults.friend }}"
+             placeholder="Their ID or profile link" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn" type="submit" data-scan-button>Scan</button>
+  </form>
+
+  <form class="form" action="{{ url_for('save_key') }}" method="post" data-key-form{{ ' hidden' if has_key }}>
+    <p>To scan a real profile I need a Steam API key. It's free and takes a minute:</p>
+    <ol class="steps">
+      <li>Open the <a href="{{ key_page }}" target="_blank" rel="noopener">Steam key page</a> and sign in.</li>
+      <li>Type any domain name. <em>localhost</em> is fine.</li>
+      <li>Paste the key here.</li>
+    </ol>
+    <div>
+      <label class="label" for="key-input">Steam API key</label>
+      <input class="field" id="key-input" name="key" type="password" placeholder="32 letters and digits"
+             minlength="32" maxlength="32" required autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn" type="submit" data-key-button>Save key</button>
+  </form>
+
+  {% if has_key %}
+  <button class="link" type="button" data-key-toggle data-other-label="Back to scanning">Change API key</button>
+  {% endif %}
+</div>
+{% endcall %}

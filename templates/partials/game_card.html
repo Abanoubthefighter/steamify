@@ -1,0 +1,24 @@
+{# The details popup for one game. Fetched on its own when a folder or a library row is clicked. #}
+<article class="game-card" data-title="{{ game.name | filename }}.nfo">
+  {% set art = game | art_url %}
+  {% if art %}
+  <img class="game-card__art" src="{{ art }}" alt="" width="460" height="215" loading="lazy" data-hide-on-error>
+  {% endif %}
+  <h3 class="game-card__name">{{ game.name }}</h3>
+  <dl class="facts">
+    <div><dt>Played</dt><dd>{{ game.minutes | hours if game.minutes else "never" }}</dd></div>
+    <div><dt>Last two weeks</dt><dd>{{ game.minutes_2weeks | hours if game.minutes_2weeks else "nothing" }}</dd></div>
+    <div><dt>Last opened</dt><dd>{{ game | last_played }}</dd></div>
+    {% if game.minutes %}
+    <div><dt>Rank</dt><dd>#{{ rank }} of {{ game_count }}</dd></div>
+    <div><dt>Share of all playtime</dt><dd>{{ share }}%</dd></div>
+    {% endif %}
+  </dl>
+  <div class="btn-row">
+    {% set store = game | store_url %}
+    {% if store %}
+    <a class="btn btn--small" href="{{ store }}" target="_blank" rel="noopener">Store page</a>
+    {% endif %}
+    <button class="btn btn--small" type="button" data-action="close" data-autofocus>Ok</button>
+  </div>
+</article>

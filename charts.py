@@ -29,15 +29,17 @@ def build_tracks(player: dict, games: list[dict], summary: dict, today: date | N
     ]
 
 
-def _view(labels, values, titles=None, notes=None, colors=None, marked=None) -> dict:
-    """One view of a track.
+def _view(key, labels, values, titles=None, notes=None, colors=None, marked=None) -> dict:
+    """One view of a track. Views are kept in a list, so their buttons appear in the order they were built.
 
+    key:    the text on the view's button
     labels: short text under each bar          titles: the long version, for tooltips
     values: bar heights                        notes:  an extra line for each tooltip
     colors: theme colour name for each bar     marked: which bars get their value printed on them
     """
     count = len(values)
     return {
+        "key": key,
         "labels": labels,
         "titles": titles or labels,
         "values": values,
@@ -54,13 +56,13 @@ def history_track(player: dict, summary: dict, today: date) -> dict:
     steam_id = player["steam_id"]
     first_day = storage.first_log_day(steam_id)
 
-    views = {}
-    for label, (size, count) in config.HISTORY_RANGES.items():
+    views = []
+    for key, (size, count) in config.HISTORY_RANGES.items():
         buckets = _buckets(size, count, today, first_day)
         # ISO dates sort like plain text, so "2026-06" works as a start date
         # for months just as "2026-06-17" does for days.
         rows = storage.get_history(steam_id, since=buckets[0], bucket=size)
-        views[label] = _history_view(buckets, rows, size)
+        views.append(_history_view(key, buckets, rows, size))
 
     return {
         "file": "playtime_history.wmv",
@@ -106,7 +108,7 @@ def last_months(count: int, today: date) -> list[str]:
     return months[::-1]
 
 
-def _history_view(buckets: list[str], rows: list[dict], size: str) -> dict:
+def _history_view(key: str, buckets: list[str], rows: list[dict], size: str) -> dict:
     """Line the logged rows up against the full list of periods and pick the bars to highlight."""
     logged = {row["bucket"]: row for row in rows}
     values = [round(logged[bucket]["minutes"] / 60, 1) if bucket in logged else 0 for bucket in buckets]
@@ -124,7 +126,7 @@ def _history_view(buckets: list[str], rows: list[dict], size: str) -> dict:
         marked.append(last)
 
     labels, titles = zip(*(_period_names(bucket, size, many=len(buckets) > 12) for bucket in buckets))
-    return _view(list(labels), values, list(titles), notes, colors, marked)
+    return _view(key, list(labels), values, list(titles), notes, colors, marked)
 
 
 def _period_names(bucket: str, size: str, many: bool) -> tuple[str, str]:
@@ -155,16 +157,17 @@ def top_games_track(games: list[dict], summary: dict) -> dict:
         "start": "ALL TIME",
         "legend": [],
         "empty": "Nothing played in this stretch, so there's no top anything.",
-        "views": {
-            "ALL TIME": _ranking_view(all_time, "minutes", summary["total_minutes"], "of all your playtime"),
-            "2 WEEKS": _ranking_view(two_weeks, "minutes_2weeks", summary["recent_minutes"], "of the last two weeks"),
-        },
+        "views": [
+            _ranking_view("ALL TIME", all_time, "minutes", summary["total_minutes"], "of all your playtime"),
+            _ranking_view("2 WEEKS", two_weeks, "minutes_2weeks", summary["recent_minutes"], "of the last two weeks"),
+        ],
     }
 
 
-def _ranking_view(games: list[dict], field: str, total: int, of_what: str) -> dict:
+def _ranking_view(key: str, games: list[dict], field: str, total: int, of_what: str) -> dict:
     names = [game["name"] for game in games]
     return _view(
+        key,
         labels=[_shorten(name) for name in names],
         values=[round(game[field] / 60, 1) for game in games],
         titles=names,
@@ -191,12 +194,13 @@ def backlog_track(games: list[dict], summary: dict) -> dict:
         "start": "ALL",
         "legend": [["red", "never launched"]],
         "empty": "This library is empty, so there's nothing to sort into piles.",
-        "views": {
-            "ALL": _view(
+        "views": [
+            _view(
+                "ALL",
                 labels=stats.band_labels(config.PLAYTIME_EDGES),
                 values=counts,
                 notes=[f"{stats.percent(count, summary['game_count'])}% of your library" for count in counts],
                 colors=["red"] + ["lilac"] * (len(counts) - 1),
             )
-        },
+        ],
     }

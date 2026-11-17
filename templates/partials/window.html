@@ -1,0 +1,33 @@
+{#
+  One desktop window. Every panel on the dashboard is built with this macro:
+
+      {% call window("scan", "scan.exe") %}
+        <div class="body"> ... </div>
+      {% endcall %}
+
+  id        short name, also used by the start menu and for remembering positions
+  title     the pretend file name in the title bar
+  color     title bar colour: "lilac", "red" or "sand" (the names come from theme.css)
+  controls  which round buttons to show, e.g. "close" or "close min max"
+  wide      take up two columns of the desktop grid
+  stack     draw "more windows underneath" outlines behind this one (0, 1 or 2)
+#}
+{% macro window(id, title, color="lilac", controls="close min max", wide=false, stack=none) %}
+<section class="win win--{{ color }}{{ ' win--wide' if wide }}{{ ' win--stack' if stack is not none }}"
+         data-win="{{ id }}"{% if stack is not none %} data-stack="{{ stack }}"{% endif %} aria-labelledby="{{ id }}-title">
+  <header class="titlebar">
+    {% if "close" in controls %}
+    <button class="ctrl ctrl--close" type="button" data-action="close" aria-label="Close {{ title }}"></button>
+    {% endif %}
+    {% if "min" in controls %}
+    <button class="ctrl ctrl--min" type="button" data-action="minimize" aria-label="Minimise {{ title }}"></button>
+    {% endif %}
+    {% if "max" in controls %}
+    <button class="ctrl ctrl--max" type="button" data-action="maximize" aria-label="Maximise {{ title }}"></button>
+    {% endif %}
+    <h2 class="titlebar__name" id="{{ id }}-title" data-title>{{ title }}</h2>
+    <span class="titlebar__meta" data-meta></span>
+  </header>
+  {{ caller() }}
+</section>
+{% endmacro %}

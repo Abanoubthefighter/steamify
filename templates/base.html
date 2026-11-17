@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Steam Stats Tracker{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/icon.svg') }}">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ url_for('static', filename='fonts/fredoka-latin.woff2') }}">
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ url_for('static', filename='fonts/josefin-sans-latin.woff2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  {# The wallpaper: sparkles and dots that sit behind every window. #}
+  <div class="wallpaper" aria-hidden="true">
+    {% for _ in range(7) %}<span class="sparkle"></span>{% endfor %}
+    {% for _ in range(6) %}<i class="dot"></i>{% endfor %}
+  </div>
+
+  {% block desktop %}{% endblock %}
+
+  {# Popups (errors, game details, help) get added here by static/js/desktop.js. #}
+  <div class="popups" data-popups></div>
+
+  <nav class="start-menu" id="start-menu" data-start-menu aria-label="Start menu" hidden>
+    <div class="start-menu__banner" aria-hidden="true">steam stats</div>
+    <div class="start-menu__items">
+      <p class="start-menu__heading">Programs</p>
+      <ul data-programs></ul>
+      {% if players %}
+      <p class="start-menu__heading">Players</p>
+      <ul>
+        {% for person in players %}
+        <li><a class="menu-item" href="{{ url_for('dashboard', steam_id=person.steam_id) }}"
+               {% if player and person.steam_id == player.steam_id %}aria-current="page"{% endif %}>{{ person.name }}</a></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <p class="start-menu__heading">System</p>
+      <ul>
+        <li><button class="menu-item" type="button" data-menu="tidy">Tidy up windows</button></li>
+        <li><button class="menu-item" type="button" data-popup-open="about">About</button></li>
+        <li><button class="menu-item" type="button" data-menu="quit">Shut down</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <footer class="taskbar">
+    <button class="start" type="button" data-start aria-expanded="false" aria-controls="start-menu">
+      <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M1 0l8 5-8 5z" fill="currentColor"/></svg>
+      start
+    </button>
+    {% block chips %}{% endblock %}
+    <div class="tray" data-tray></div>
+    <span class="taskbar__spacer"></span>
+    <time class="chip" data-clock></time>
+  </footer>
+
+  {# The empty shell every popup is built from. #}
+  <template id="popup-template">
+    <section class="win" role="dialog">
+      <header class="titlebar">
+        <button class="ctrl ctrl--close" type="button" data-action="close" aria-label="Close"></button>
+        <h2 class="titlebar__name" data-title></h2>
+      </header>
+      <div class="body center" data-popup-body></div>
+    </section>
+  </template>
+
+  <template data-popup="about" data-title="about.txt">
+    <p class="big">Steam Stats Tracker</p>
+    <p>A little desktop for your Steam library: what you play, what you ignore, and how that changes over time.</p>
+    <p class="note">Not affiliated with Valve. Your data comes from the public Steam Web API and stays on this computer.</p>
+    <button class="btn" type="button" data-action="close" data-autofocus>Ok</button>
+  </template>
+
+  <template data-popup="shutdown" data-title="shutdown.exe">
+    <p class="big">Bye for now</p>
+    <p>It's now safe to close this tab.</p>
+    <button class="btn" type="button" data-action="close" data-autofocus>Ok</button>
+  </template>
+
+  {% block templates %}{% endblock %}
+  {% block scripts %}{% endblock %}
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

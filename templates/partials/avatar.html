@@ -1,0 +1,8 @@
+{# A player's picture, or their initial in a circle when Steam gave us no picture. #}
+{% macro avatar(person, small=false) %}
+{% if person.avatar %}
+<span class="avatar avatar--photo{{ ' avatar--small' if small }}"><img src="{{ person.avatar }}" alt="" width="60" height="60"></span>
+{% else %}
+<span class="avatar{{ ' avatar--small' if small }}" aria-hidden="true">{{ person.name[:1] | upper }}</span>
+{% endif %}
+{% endmacro %}

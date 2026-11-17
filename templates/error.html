@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "partials/window.html" import window %}
+
+{% block title %}{{ title }} · Steam Stats Tracker{% endblock %}
+
+{% block desktop %}
+<main class="desktop desktop--single" data-desktop>
+  {% call window("error", "error.exe", color="red", controls="") %}
+  <div class="body center">
+    <div class="alert__icon" aria-hidden="true">!</div>
+    <h1 class="heading">{{ title }}</h1>
+    <p>{{ message }}</p>
+    <a class="btn" href="{{ url_for('home') }}">Back to the desktop</a>
+  </div>
+  {% endcall %}
+</main>
+{% endblock %}

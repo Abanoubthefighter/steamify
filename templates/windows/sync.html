@@ -1,0 +1,22 @@
+{#
+  sync.exe: shows when the data was last fetched and lets you fetch it again.
+  While a scan runs, static/js/scan.js fills the bar one step at a time.
+#}
+{% from "partials/window.html" import window %}
+{% call window("sync", "sync.exe", color="sand") %}
+<div class="body" data-sync>
+  <div class="icons" aria-hidden="true">
+    <div class="icon-box icon-box--round">S</div>
+    <div class="icon-box icon-box--doc"></div>
+    <div class="icon-box icon-box--folder"></div>
+  </div>
+  <p data-sync-label role="status">
+    {% if is_demo %}Demo data. Press the button to watch a sync anyway.
+    {% else %}Last synced {{ player.synced_at | ago }}.{% endif %}
+  </p>
+  <div class="progress" role="progressbar" aria-label="Sync progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" data-sync-bar>
+    <span class="progress__fill"></span>
+  </div>
+  <button class="btn" type="button" data-sync-button>Sync now</button>
+</div>
+{% endcall %}
