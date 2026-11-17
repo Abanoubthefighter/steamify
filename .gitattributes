@@ -1,0 +1,6 @@
+# Let git sort out line endings, except where the wrong ones break things.
+* text=auto
+*.bat text eol=crlf
+*.woff2 binary
+*.ico binary
+*.png binary

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The app icon: one of its own little windows, with a bar chart inside. -->
+  <rect width="64" height="64" rx="12" fill="#f7a04b"/>
+  <rect x="15" y="17" width="40" height="36" fill="#3b2232"/>
+  <rect x="9" y="11" width="40" height="36" fill="#fde2c6" stroke="#3b2232" stroke-width="3"/>
+  <rect x="9" y="11" width="40" height="10" fill="#d8aac8" stroke="#3b2232" stroke-width="3"/>
+  <circle cx="16" cy="16" r="2.4" fill="#f2552c" stroke="#3b2232" stroke-width="1.5"/>
+  <g stroke="#3b2232" stroke-width="2">
+    <rect x="15" y="33" width="7" height="9" fill="#d8aac8"/>
+    <rect x="25.5" y="28" width="7" height="14" fill="#f2c27c"/>
+    <rect x="36" y="25" width="7" height="17" fill="#f2552c"/>
+  </g>
+</svg>

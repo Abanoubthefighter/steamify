@@ -1,0 +1,1439 @@
+/* ==========================================================================
+   LAYOUT AND COMPONENTS
+
+   Shapes and positions only. Every colour, font and size that makes up the
+   "look" is a variable from theme.css, so reskinning never means editing
+   this file.
+
+   Sections:  base · wallpaper · desktop · window · form controls · profile
+              warning · sync · media player · folders · library · sort
+              versus · game details · taskbar · start menu · motion
+   ========================================================================== */
+
+/* --- Base ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  padding: 32px 16px calc(var(--taskbar-height) + 46px);
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 var(--text-md) / 1.35 var(--font-body);
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: var(--line) solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Text for screen readers only. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.center {
+  align-items: center;
+  text-align: center;
+}
+
+.note {
+  font-size: var(--text-sm);
+}
+
+/* .big is for numbers and one-word shouts, .heading for a short sentence. */
+.big {
+  font: 600 var(--text-xl) / 1.1 var(--font-ui);
+}
+
+.heading {
+  font: 600 22px / 1.2 var(--font-ui);
+}
+
+.empty {
+  padding: 20px var(--pad);
+  text-align: center;
+}
+
+/* Chunky scrollbars to match the windows. */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sand);
+  border-left: var(--line-thin) solid var(--ink);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lilac);
+  border: var(--line-thin) solid var(--ink);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--red);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: var(--lilac) var(--sand);
+  }
+}
+
+/* --- Wallpaper ----------------------------------------------------------- */
+
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--cream);
+  /* a four-pointed star, drawn as a shape so it doesn't depend on a font */
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+
+.dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+}
+
+/* Where each one sits. Move them, or add more in base.html. */
+.sparkle:nth-of-type(1) { top: 3%; left: 7%; }
+.sparkle:nth-of-type(2) { top: 10%; right: 5%; }
+.sparkle:nth-of-type(3) { top: 46%; left: 1.5%; }
+.sparkle:nth-of-type(4) { top: 66%; right: 2.5%; }
+.sparkle:nth-of-type(5) { top: 84%; left: 9%; }
+.sparkle:nth-of-type(6) { top: 90%; right: 16%; }
+.sparkle:nth-of-type(7) { top: 30%; right: 1%; width: 14px; height: 14px; }
+
+.dot:nth-of-type(1) { top: 6%; left: 30%; }
+.dot:nth-of-type(2) { top: 38%; right: 2%; }
+.dot:nth-of-type(3) { top: 74%; left: 3.5%; }
+.dot:nth-of-type(4) { top: 94%; right: 40%; }
+.dot:nth-of-type(5) { top: 20%; left: 2%; }
+.dot:nth-of-type(6) { top: 55%; right: 4.5%; }
+
+/* --- Desktop: the grid the windows sit in -------------------------------- */
+
+.desktop {
+  position: relative;
+  max-width: var(--desktop-width);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: row dense; /* when a window is closed, later ones move up into the gap */
+  gap: var(--gap);
+}
+
+.win--wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 980px) {
+  .desktop {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .desktop {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .win--wide {
+    grid-column: auto;
+  }
+}
+
+/* A page with one window in the middle (the error page). */
+.desktop.desktop--single {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+  padding-top: 10vh;
+}
+
+/* --- Window -------------------------------------------------------------- */
+
+.win {
+  position: relative;
+  z-index: var(--z, 1); /* raised by desktop.js when a window is clicked */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
+  /* --dx / --dy are how far the window has been dragged from its grid spot */
+  transform: translate(var(--dx, 0px), var(--dy, 0px));
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--lilac);
+  border-bottom: var(--line) solid var(--ink);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.win--red > .titlebar {
+  background: var(--red);
+  color: var(--cream);
+}
+
+.win--sand > .titlebar {
+  background: var(--sand);
+}
+
+.titlebar__name {
+  margin-left: 8px;
+  overflow: hidden;
+  font: 500 var(--text-sm) var(--font-ui);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.titlebar__meta {
+  margin-left: auto;
+  font: 500 var(--text-xs) var(--font-ui);
+  white-space: nowrap;
+}
+
+/* The round close / minimise / maximise buttons. Their symbols are drawn
+   with CSS so they look the same whatever fonts are installed. */
+.ctrl {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--sand);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ctrl--close {
+  background: var(--red);
+}
+
+.ctrl:hover {
+  background: var(--cream);
+}
+
+.ctrl::before,
+.ctrl::after {
+  content: "";
+  position: absolute;
+  background: var(--ink);
+}
+
+.ctrl--close::before,
+.ctrl--close::after {
+  width: 9px;
+  height: 2px;
+  transform: rotate(45deg);
+}
+
+.ctrl--close::after {
+  transform: rotate(-45deg);
+}
+
+.ctrl--min::before {
+  width: 8px;
+  height: 2px;
+}
+
+.ctrl--max::before {
+  width: 8px;
+  height: 7px;
+  background: none;
+  border: 1.5px solid var(--ink);
+  border-top-width: 3px;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0; /* lets a list inside scroll instead of stretching the window */
+  padding: var(--pad);
+}
+
+.body--flush {
+  gap: 0;
+  padding: 0;
+}
+
+/* Window states, set by desktop.js. */
+.win.is-dragging > .titlebar {
+  cursor: grabbing;
+}
+
+.win.is-max {
+  position: fixed;
+  inset: var(--gap) var(--gap) calc(var(--taskbar-height) + var(--gap));
+  z-index: 500;
+  margin: 0;
+  overflow: auto;
+  transform: none;
+}
+
+.win.is-max > .titlebar {
+  cursor: default;
+}
+
+/* "More windows underneath": hard shadows up and to the left, each one a
+   fill colour with an ink rim, so they read as the edges of other windows. */
+.win--stack {
+  margin: calc(var(--stack-step) * 2) 0 0 calc(var(--stack-step) * 2);
+}
+
+.win--stack[data-stack="1"] {
+  box-shadow:
+    var(--shadow),
+    calc(var(--stack-step) * -1) calc(var(--stack-step) * -1) 0 calc(var(--line) * -1) var(--paper),
+    calc(var(--stack-step) * -1) calc(var(--stack-step) * -1) 0 0 var(--ink);
+}
+
+.win--stack[data-stack="2"] {
+  box-shadow:
+    var(--shadow),
+    calc(var(--stack-step) * -1) calc(var(--stack-step) * -1) 0 calc(var(--line) * -1) var(--paper),
+    calc(var(--stack-step) * -1) calc(var(--stack-step) * -1) 0 0 var(--ink),
+    calc(var(--stack-step) * -2) calc(var(--stack-step) * -2) 0 calc(var(--line) * -1) var(--lilac),
+    calc(var(--stack-step) * -2) calc(var(--stack-step) * -2) 0 0 var(--ink);
+}
+
+/* Popups float above the desktop, centred, and can be dragged like any window. */
+.popups {
+  position: fixed;
+  inset: 0 0 var(--taskbar-height);
+  z-index: 600;
+  display: grid;
+  place-items: center;
+  padding: var(--gap);
+  pointer-events: none;
+}
+
+.popups > .win {
+  grid-area: 1 / 1;
+  width: min(380px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  pointer-events: auto;
+}
+
+/* --- Form controls ------------------------------------------------------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font: 500 var(--text-sm) var(--font-ui);
+}
+
+.label__hint {
+  font-weight: 400;
+}
+
+.field {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 0;
+}
+
+.field:focus {
+  background: var(--cream);
+}
+
+.field::placeholder {
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+.btn {
+  align-self: center;
+  min-width: 110px;
+  padding: 7px 18px;
+  background: var(--sand);
+  color: var(--ink);
+  border: var(--line-thin) solid var(--ink);
+  box-shadow: var(--shadow-small);
+  font: 600 15px var(--font-ui);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--quick), box-shadow var(--quick);
+}
+
+.btn:hover {
+  background: var(--red);
+  color: var(--cream);
+}
+
+/* The press: the button slides onto its own shadow. */
+.btn:active {
+  box-shadow: none;
+  transform: translate(var(--press), var(--press));
+}
+
+.btn:disabled {
+  background: var(--paper);
+  color: var(--ink);
+  cursor: progress;
+}
+
+.btn--small {
+  min-width: 70px;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.link {
+  align-self: center;
+  background: none;
+  border: 0;
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 22px;
+}
+
+/* --- profile.exe --------------------------------------------------------- */
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.profile__text {
+  min-width: 0;
+}
+
+.profile__name {
+  font: 500 var(--text-lg) / 1.2 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+
+.avatar {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  background: var(--sand);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 6px var(--red);
+  font: 600 26px var(--font-ui);
+}
+
+/* A real picture keeps the red ring by sitting inside a red circle. */
+.avatar--photo {
+  padding: 4px;
+  background: var(--red);
+  box-shadow: none;
+}
+
+.avatar--photo img {
+  width: 100%;
+  height: 100%;
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar--small {
+  width: 44px;
+  height: 44px;
+  box-shadow: inset 0 0 0 4px var(--red);
+  font-size: var(--text-lg);
+}
+
+.avatar--small.avatar--photo {
+  padding: 3px;
+  box-shadow: none;
+}
+
+.avatar--empty {
+  background: var(--paper);
+  box-shadow: none;
+  border-style: dashed;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  background: var(--green);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.status-dot--off {
+  background: var(--paper);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+}
+
+.tile {
+  padding: 8px 4px 6px;
+  text-align: center;
+}
+
+.tile + .tile {
+  border-left: var(--line-thin) solid var(--ink);
+}
+
+.tile__value {
+  display: block;
+  font: 600 var(--text-lg) / 1.15 var(--font-ui);
+  white-space: nowrap;
+}
+
+.tile__label {
+  font-size: var(--text-sm);
+}
+
+/* --- warning.exe --------------------------------------------------------- */
+
+.alert {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.alert__icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--red);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  font: 600 28px var(--font-ui);
+}
+
+.alert__icon--calm {
+  background: var(--green);
+}
+
+/* a tick, drawn from two borders */
+.alert__icon--calm::before {
+  content: "";
+  width: 11px;
+  height: 21px;
+  border: solid var(--ink);
+  border-width: 0 5px 5px 0;
+  transform: translateY(-3px) rotate(45deg);
+}
+
+/* --- sync.exe ------------------------------------------------------------ */
+
+.icons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.icon-box {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: var(--line-thin) solid var(--ink);
+  font: 600 18px var(--font-ui);
+}
+
+.icon-box--round {
+  background: var(--red);
+  color: var(--cream);
+  border-radius: 50%;
+}
+
+.icon-box--doc {
+  background: var(--cream);
+  transform: rotate(-8deg);
+}
+
+/* three lines of "text" on the document */
+.icon-box--doc::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--ink);
+  box-shadow: 0 -7px 0 var(--ink), 0 7px 0 var(--ink);
+}
+
+.icon-box--folder {
+  background: var(--sand);
+  border-radius: 3px 3px 0 0;
+}
+
+.progress {
+  height: 26px;
+  padding: 3px;
+  background: var(--sand);
+  border: var(--line-thin) solid var(--ink);
+}
+
+/* The fill is cut into segments by a repeating stripe. scan.js sets --progress. */
+.progress__fill {
+  display: block;
+  width: var(--progress, 100%);
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--lilac) 0 10px, var(--ink) 10px 12px, var(--sand) 12px 15px);
+  transition: width var(--smooth) steps(4, end);
+}
+
+/* --- Media player (the charts) ------------------------------------------- */
+
+.screen {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 14px 8px;
+  /* two layers of dots make the stars, on top of the night colour */
+  background:
+    radial-gradient(circle, var(--cream) 0.6px, transparent 1.2px) 0 0 / 22px 22px,
+    radial-gradient(circle, var(--cream) 0.5px, transparent 1px) 11px 7px / 31px 31px,
+    var(--night);
+  border-bottom: var(--line) solid var(--ink);
+  color: var(--cream);
+}
+
+/* Chart.js sizes the canvas to this box, so the box needs a real height. */
+.screen__chart {
+  position: relative;
+  flex: 1;
+  min-height: 230px;
+}
+
+.screen__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px 15%;
+  text-align: center;
+}
+
+.screen__table {
+  position: absolute;
+  inset: 14px;
+  overflow: auto;
+}
+
+.screen__table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.screen__table caption {
+  padding-bottom: 6px;
+  font: 500 var(--text-sm) var(--font-ui);
+  text-align: left;
+}
+
+.screen__table th,
+.screen__table td {
+  padding: 4px 8px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--cream) 30%, transparent);
+  text-align: left;
+}
+
+.screen__table th {
+  font: 500 var(--text-xs) var(--font-ui);
+  text-transform: uppercase;
+}
+
+.screen__table td:nth-child(2),
+.screen__table th:nth-child(2) {
+  font-family: var(--font-ui);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.player-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 12px 14px;
+}
+
+.slider {
+  position: relative;
+  height: 7px;
+  background: var(--sand);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+}
+
+/* The knob shows which track is on. charts.js sets --at. */
+.slider__thumb {
+  position: absolute;
+  top: 50%;
+  left: clamp(7px, var(--at, 0%), calc(100% - 7px));
+  width: 14px;
+  height: 14px;
+  background: var(--red);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: left var(--smooth) steps(4, end);
+}
+
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.transport__label {
+  font: 500 var(--text-sm) var(--font-ui);
+}
+
+.keys,
+.keys__views {
+  display: flex;
+}
+
+.keys {
+  border: var(--line-thin) solid var(--ink);
+}
+
+.keys button {
+  min-width: 32px;
+  height: 26px;
+  padding: 0 7px;
+  background: var(--sand);
+  border: 0;
+  border-right: var(--line-thin) solid var(--ink);
+  font: 600 11px var(--font-ui);
+  cursor: pointer;
+}
+
+.keys > button:last-child {
+  border-right: 0;
+}
+
+.keys button:hover,
+.keys button[aria-pressed="true"] {
+  background: var(--red);
+  color: var(--cream);
+}
+
+.keys button:focus-visible {
+  outline-offset: -4px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-right: auto;
+  font-size: var(--text-xs);
+}
+
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend__swatch {
+  width: 10px;
+  height: 10px;
+  background: var(--swatch);
+  border: 1.5px solid var(--ink);
+}
+
+/* --- C:\top_games -------------------------------------------------------- */
+
+.grid-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 16px 12px;
+}
+
+.file {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+
+.file__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.file__hours {
+  display: block;
+  color: var(--red-ink);
+  font: 600 var(--text-xs) var(--font-ui);
+}
+
+.folder {
+  position: relative;
+  display: block;
+  height: 54px;
+  margin: 10px 4px 6px;
+  background: var(--lilac);
+  border: var(--line-thin) solid var(--ink);
+}
+
+/* the tab on top of the folder */
+.folder::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: -2px;
+  width: 40%;
+  height: 10px;
+  background: var(--lilac);
+  border: var(--line-thin) solid var(--ink);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+}
+
+.file:hover .folder,
+.file:hover .folder::before {
+  background: var(--sand);
+}
+
+/* A document with a folded corner. clip-path would cut the outline off, so
+   the outline is a dark copy of the shape sitting behind a slightly smaller one. */
+.doc-file {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 62px;
+  margin: 2px 14px 6px;
+  background: var(--ink);
+  clip-path: polygon(0 0, 72% 0, 100% 22%, 100% 100%, 0 100%);
+  font: 600 18px var(--font-ui);
+  isolation: isolate;
+}
+
+.doc-file::before {
+  content: "";
+  position: absolute;
+  inset: var(--line-thin);
+  z-index: -1;
+  background: var(--doc, var(--sand));
+  clip-path: polygon(0 0, 71% 0, 100% 23%, 100% 100%, 0 100%);
+}
+
+.doc-file--red {
+  --doc: var(--red);
+  color: var(--cream);
+}
+
+.doc-file--lilac {
+  --doc: var(--lilac);
+}
+
+.file:hover .doc-file {
+  transform: translateY(-2px);
+}
+
+/* --- library.exe --------------------------------------------------------- */
+
+.toolbar {
+  padding: var(--space-2) 12px;
+  border-bottom: var(--line-thin) solid var(--ink);
+}
+
+/* The header and every row share these columns: icon, name, last opened, played. */
+.rows-header,
+.row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 118px 62px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+}
+
+.rows-header {
+  padding-right: 26px; /* lines up with the rows despite their scrollbar */
+  background: var(--lilac);
+  border-bottom: var(--line-thin) solid var(--ink);
+  font: 500 var(--text-xs) var(--font-ui);
+  text-transform: uppercase;
+}
+
+.rows-header span:first-child {
+  grid-column: 1 / 3;
+}
+
+.rows-header span:last-child,
+.row__hours {
+  text-align: right;
+}
+
+/* The list takes whatever height the window has left and scrolls inside it,
+   so the status bar always sits on the window's bottom edge. */
+.rows-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rows {
+  flex: 1 1 0;
+  min-height: 318px;
+  overflow-y: scroll;
+}
+
+.row {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1.5px dashed var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+li:last-child > .row {
+  border-bottom: 0;
+}
+
+.row:hover,
+.row:focus-visible {
+  background: var(--sand);
+  outline: none;
+}
+
+.row__icon {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--ink);
+}
+
+.row__icon--letter {
+  display: grid;
+  place-items: center;
+  background: var(--lilac);
+  font: 600 var(--text-xs) var(--font-ui);
+}
+
+.row__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row__when {
+  font-size: var(--text-sm);
+}
+
+.row__hours {
+  color: var(--red-ink);
+  font: 600 var(--text-sm) var(--font-ui);
+  white-space: nowrap;
+}
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding: 6px 12px;
+  background: var(--sand);
+  border-top: var(--line-thin) solid var(--ink);
+  font-size: var(--text-sm);
+}
+
+/* On a narrow window the "last opened" column goes, so names keep their room. */
+@media (max-width: 520px) {
+  .rows-header,
+  .row {
+    grid-template-columns: 24px minmax(0, 1fr) 62px;
+  }
+
+  .rows-header span:nth-child(2),
+  .row__when {
+    display: none;
+  }
+}
+
+/* While new rows are on their way the old ones stay put, just dimmed. */
+.is-loading {
+  opacity: 0.55;
+}
+
+/* --- sort.exe ------------------------------------------------------------ */
+
+.radios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 0;
+}
+
+.radios label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.radios input {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: var(--sand);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* the dot in a selected radio button: a hard-edged circle, not a soft glow */
+.radios input:checked {
+  background: radial-gradient(var(--ink) 38%, var(--sand) 42%);
+}
+
+/* --- versus.exe ---------------------------------------------------------- */
+
+.versus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.versus__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.versus__name {
+  max-width: 100%;
+  overflow: hidden;
+  font: 500 var(--text-md) var(--font-ui);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A small swatch before each name says which half of the bars below is theirs. */
+.versus__name::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  background: var(--lilac);
+  border: 1.5px solid var(--ink);
+}
+
+.versus__side:last-child .versus__name::before {
+  background: var(--sand);
+}
+
+.versus__hours {
+  font: 600 var(--text-lg) / 1.1 var(--font-ui);
+}
+
+.versus__badge {
+  align-self: center;
+  padding: 1px 8px 2px;
+  background: var(--red);
+  color: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+  font: 600 var(--text-sm) var(--font-ui);
+  transform: rotate(-6deg);
+}
+
+.duels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.duel__name {
+  display: block;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* One bar, split at --mine: your share on the left, theirs on the right. */
+.duel__bar {
+  display: block;
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--lilac) 0 var(--mine),
+    var(--ink) var(--mine) calc(var(--mine) + 2px),
+    var(--sand) calc(var(--mine) + 2px)
+  );
+  border: var(--line-thin) solid var(--ink);
+}
+
+.duel__numbers {
+  display: flex;
+  justify-content: space-between;
+  font: 600 var(--text-xs) var(--font-ui);
+}
+
+/* --- Game details popup -------------------------------------------------- */
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.game-card__art {
+  width: 100%;
+  height: auto;
+  background: var(--night);
+  border: var(--line-thin) solid var(--ink);
+}
+
+.game-card__name {
+  font: 600 var(--text-lg) / 1.2 var(--font-ui);
+}
+
+.facts {
+  width: 100%;
+  background: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+  text-align: left;
+}
+
+.facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+}
+
+.facts > div + div {
+  border-top: 1.5px dashed var(--ink);
+}
+
+.facts dd {
+  font: 600 var(--text-sm) var(--font-ui);
+  text-align: right;
+}
+
+.facts--stacked > div {
+  flex-direction: column;
+  gap: 0;
+}
+
+.facts--stacked dt {
+  font: 600 var(--text-sm) var(--font-ui);
+}
+
+.facts--stacked dd {
+  font: inherit;
+  text-align: left;
+}
+
+/* --- Taskbar ------------------------------------------------------------- */
+
+.taskbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--taskbar-height);
+  padding: 0 12px;
+  background: var(--lilac);
+  border-top: var(--line) solid var(--ink);
+  font-family: var(--font-ui);
+}
+
+.start {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 16px;
+  background: var(--red);
+  color: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font: 600 15px var(--font-ui);
+  cursor: pointer;
+  transition: transform var(--quick), box-shadow var(--quick);
+}
+
+.start:active,
+.start[aria-expanded="true"] {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+.chip {
+  padding: 3px 10px;
+  background: var(--paper);
+  border: var(--line-thin) solid var(--ink);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+/* Minimised windows wait in the tray as chips you can click. */
+.tray {
+  display: flex;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chip--window {
+  background: var(--sand);
+  cursor: pointer;
+}
+
+.chip--window:hover {
+  background: var(--red);
+  color: var(--cream);
+}
+
+.taskbar__spacer {
+  flex: 1;
+}
+
+@media (max-width: 560px) {
+  .chip--roomy {
+    display: none;
+  }
+}
+
+/* --- Start menu ---------------------------------------------------------- */
+
+.start-menu {
+  position: fixed;
+  bottom: calc(var(--taskbar-height) + 10px);
+  left: 12px;
+  z-index: 800;
+  display: flex;
+  width: 250px;
+  max-height: calc(100vh - var(--taskbar-height) - 40px);
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
+}
+
+/* the strip down the side, with its text running bottom to top */
+.start-menu__banner {
+  flex: none;
+  padding: 10px 5px;
+  background: var(--red);
+  color: var(--cream);
+  border-right: var(--line) solid var(--ink);
+  font: 600 var(--text-md) var(--font-ui);
+  letter-spacing: 1px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.start-menu__items {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  overflow-y: auto;
+}
+
+.start-menu__heading {
+  padding: 8px 12px 2px;
+  font: 600 var(--text-xs) var(--font-ui);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.start-menu__heading:not(:first-child) {
+  margin-top: 6px;
+  border-top: 1.5px dashed var(--ink);
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 5px 12px;
+  overflow: hidden;
+  background: none;
+  border: 0;
+  text-align: left;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--red);
+  color: var(--cream);
+  outline: none;
+}
+
+.menu-item[aria-current]::after {
+  content: " (on screen)";
+  font-size: var(--text-xs);
+}
+
+/* --- Motion -------------------------------------------------------------- */
+
+/* Windows pop open in a few chunky steps instead of a smooth fade. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.9;
+  }
+}
+
+.win.is-opening {
+  animation: pop-in var(--smooth) steps(3, end);
+}
+
+/* A title bar blinks when the start menu brings its window forward. */
+@keyframes blink {
+  50% {
+    background: var(--cream);
+    color: var(--ink);
+  }
+}
+
+.win.is-flashing > .titlebar {
+  animation: blink 0.3s steps(1, end) 2;
+}
+
+/* The document hops along while a sync is running. */
+@keyframes hop {
+  50% {
+    transform: rotate(8deg) translateY(-6px);
+  }
+}
+
+.is-syncing .icon-box--doc {
+  animation: hop 0.6s steps(2, end) infinite;
+}
+
+@keyframes twinkle {
+  50% {
+    scale: 0.6;
+  }
+}
+
+.sparkle:nth-of-type(odd) {
+  animation: twinkle 3.2s steps(2, end) infinite;
+}
+
+.sparkle:nth-of-type(3n) {
+  animation-delay: 1.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

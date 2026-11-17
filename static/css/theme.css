@@ -1,0 +1,94 @@
+/* ==========================================================================
+   THEME
+
+   The whole look of the app is decided in this file. Change a value here,
+   refresh, and every window, button and chart follows. style.css contains
+   no colours and no font names of its own, and the charts read their
+   colours from here too (see static/js/charts.js).
+   ========================================================================== */
+
+/* --- Fonts ---------------------------------------------------------------
+   Shipped with the app (static/fonts) so it looks right with no internet.
+   To change a font: drop its .woff2 in that folder, point a block like
+   these at it, and update --font-ui or --font-body below.                  */
+
+@font-face {
+  font-family: "Fredoka";
+  src: url("../fonts/fredoka-latin.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Fredoka";
+  src: url("../fonts/fredoka-latin-ext.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("../fonts/josefin-sans-latin.woff2") format("woff2");
+  font-weight: 100 700;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("../fonts/josefin-sans-latin-ext.woff2") format("woff2");
+  font-weight: 100 700;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* --- Colours ----------------------------------------------------------- */
+  --bg: #f7a04b;         /* the desktop wallpaper */
+  --paper: #fde2c6;      /* window bodies */
+  --ink: #3b2232;        /* outlines and text */
+  --lilac: #d8aac8;      /* title bars, folders, the taskbar */
+  --red: #f2552c;        /* title bars and anything that should pop */
+  --sand: #f2c27c;       /* title bars and buttons */
+  --night: #29233f;      /* the media player screen */
+  --cream: #fff4e3;      /* stars, light text, highlights */
+  --green: #5bd17a;      /* the "online" dot */
+  --red-ink: #bf3510;    /* --red, deepened so small text stays readable on paper */
+
+  /* --- Type ---------------------------------------------------------------- */
+  --font-ui: "Fredoka", "Segoe UI", sans-serif;          /* titles, buttons, numbers */
+  --font-body: "Josefin Sans", "Segoe UI", sans-serif;   /* everything else */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 30px;
+
+  /* --- Lines and shadows -----------------------------------------------------
+     Everything is flat: outlines are solid and shadows are hard-edged offsets. */
+  --line: 2.5px;                          /* window outlines */
+  --line-thin: 2px;                       /* buttons, fields and other small parts */
+  --shadow: 5px 5px 0 var(--ink);         /* under windows */
+  --shadow-small: 3px 3px 0 var(--ink);   /* under buttons */
+  --press: 3px;                           /* how far a button sinks when clicked */
+  --stack-step: 6px;                      /* how far each "window underneath" peeks out */
+
+  /* --- Spacing ------------------------------------------------------------- */
+  --gap: 22px;              /* between windows */
+  --pad: 18px;              /* inside a window */
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --desktop-width: 1100px;  /* the widest the window grid gets */
+  --taskbar-height: 50px;
+
+  /* --- Motion ---------------------------------------------------------------- */
+  --quick: 80ms;            /* button presses */
+  --smooth: 160ms;          /* windows opening, bars filling */
+}
