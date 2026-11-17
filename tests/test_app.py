@@ -63,6 +63,11 @@ def test_dashboard_has_every_window(client):
     assert 'id="tracks-data"' in page
 
 
+def test_about_box_shows_the_version(client):
+    page = client.get(DEMO_PAGE).text
+    assert f"Version {config.APP_VERSION}" in page
+
+
 def test_demo_views_are_not_remembered(client):
     client.get(DEMO_PAGE)
     assert storage.get_setting("last_player") is None

@@ -11,6 +11,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv, set_key
 
+# --- The app itself ----------------------------------------------------------
+
+APP_NAME = "Steam Stats Tracker"
+APP_VERSION = "1.0.0"         # bump for a new release; the .exe and the installer read it from here
+APP_ID = "SteamStatsTracker"  # no spaces: used for the data folder and to spot a copy that's already open
+
 # --- Where things live -------------------------------------------------------
 
 APP_DIR = Path(__file__).resolve().parent
@@ -24,7 +30,7 @@ def _user_data_dir() -> Path:
     programs do.
     """
     if getattr(sys, "frozen", False):
-        return Path(os.environ.get("LOCALAPPDATA", Path.home())) / "SteamStatsTracker"
+        return Path(os.environ.get("LOCALAPPDATA", Path.home())) / APP_ID
     return APP_DIR
 
 
@@ -84,7 +90,7 @@ MAX_ALERTS = 5
 
 # --- Desktop window ----------------------------------------------------------
 
-WINDOW_TITLE = "Steam Stats Tracker"
+WINDOW_TITLE = APP_NAME
 WINDOW_SIZE = (1280, 880)   # what the window opens at, if the screen is big enough
 WINDOW_MIN_SIZE = (720, 560)
 SCREEN_MARGIN = 80          # room always left around the window on small screens

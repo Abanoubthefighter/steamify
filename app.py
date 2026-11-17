@@ -76,7 +76,11 @@ app.jinja_env.filters.update(
 @app.context_processor
 def template_globals() -> dict:
     """Values every template may need, so each route doesn't have to pass them."""
-    return {"has_key": bool(config.STEAM_API_KEY), "key_page": config.STEAM_KEY_PAGE}
+    return {
+        "has_key": bool(config.STEAM_API_KEY),
+        "key_page": config.STEAM_KEY_PAGE,
+        "app_version": config.APP_VERSION,
+    }
 
 
 # --- Pages -------------------------------------------------------------------
