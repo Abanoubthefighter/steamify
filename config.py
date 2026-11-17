@@ -74,9 +74,10 @@ PLAYTIME_EDGES = [1, 10, 50, 100]
 
 # --- Alerts (warning.exe) ----------------------------------------------------
 
-OBSESSION_PERCENT = 40  # one game above this share of all playtime gets called out
+OBSESSION_PERCENT = 30  # one game above this share of all playtime gets called out
 BINGE_HOURS = 40        # this many hours in two weeks counts as a binge
 ABANDONED_DAYS = 365    # a favourite untouched for this long counts as abandoned
+FAVOURITES_COUNT = 10   # how far down the most-played list still counts as "a favourite"
 MAX_ALERTS = 5
 
 # --- Desktop window ----------------------------------------------------------
