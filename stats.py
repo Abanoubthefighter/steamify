@@ -113,6 +113,80 @@ def search_games(games: list[dict], text: str) -> list[dict]:
     return [game for game in games if needle in _name_key(game)]
 
 
+# --- Achievements per game (trophies.exe) ------------------------------------
+# These take the games from storage.get_achievement_games:
+# {"app_id", "name", "icon", "unlocked", "total", "last_unlock"}
+
+
+def completion(game: dict) -> int:
+    """How much of a game's achievements are unlocked, in whole percent."""
+    return percent(game["unlocked"], game["total"])
+
+
+def _latest_unlock(games) -> list[dict]:
+    # Games with no dated unlock count as 0, so they end up at the bottom.
+    return sorted(games, key=lambda game: (-(game["last_unlock"] or 0), _name_key(game)))
+
+
+def _closest_to_perfect(games) -> list[dict]:
+    unfinished = [game for game in games if game["unlocked"] < game["total"]]
+    return sorted(unfinished, key=lambda game: (-game["unlocked"] / game["total"], game["total"] - game["unlocked"], _name_key(game)))
+
+
+def _most_unlocked(games) -> list[dict]:
+    return sorted(games, key=lambda game: (-game["unlocked"], _name_key(game)))
+
+
+def _perfect_only(games) -> list[dict]:
+    return _latest_unlock(game for game in games if game["unlocked"] == game["total"])
+
+
+def _not_started(games) -> list[dict]:
+    return sorted((game for game in games if game["unlocked"] == 0), key=_name_key)
+
+
+# The choices in trophies.exe, built the same way as SORT_ORDERS above.
+TROPHY_ORDERS = {
+    "latest": ("Latest unlock", _latest_unlock),
+    "closest": ("Closest to perfect", _closest_to_perfect),
+    "most": ("Most unlocked", _most_unlocked),
+    "perfect": ("Perfect only", _perfect_only),
+    "untouched": ("Not started", _not_started),
+    "name": ("A to Z", _a_to_z),
+}
+DEFAULT_TROPHY_ORDER = "latest"
+
+
+def trophy_choices() -> list[tuple[str, str]]:
+    """(key, label) pairs for the radio buttons in trophies.exe."""
+    return [(key, label) for key, (label, _) in TROPHY_ORDERS.items()]
+
+
+def sort_trophies(games: list[dict], order: str = DEFAULT_TROPHY_ORDER) -> list[dict]:
+    """Order (and for some orders, filter) the games. Unknown orders fall back to the default."""
+    _, sorter = TROPHY_ORDERS.get(order, TROPHY_ORDERS[DEFAULT_TROPHY_ORDER])
+    return sorter(games)
+
+
+def achievement_overview(games: list[dict]) -> dict:
+    """The headline numbers at the top of trophies.exe.
+
+    "average" is the average completion of the games you've unlocked at
+    least one achievement in, the way Steam's own profile counts it. A game
+    you never started doesn't drag it down.
+    """
+    started = [game for game in games if game["unlocked"]]
+    average = sum(game["unlocked"] / game["total"] for game in started) / len(started) if started else 0
+    return {
+        "unlocked": sum(game["unlocked"] for game in games),
+        "total": sum(game["total"] for game in games),
+        "games": len(games),
+        "started": len(started),
+        "perfect": sum(1 for game in games if game["unlocked"] == game["total"]),
+        "average": round(100 * average),
+    }
+
+
 # --- Grouping by playtime (the backlog chart) --------------------------------
 
 

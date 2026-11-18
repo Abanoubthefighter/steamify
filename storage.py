@@ -532,6 +532,76 @@ def get_nearly_done(steam_id: str, at_least_percent: int, limit: int) -> list[di
     return [dict(row) for row in rows]
 
 
+def get_achievement_games(steam_id: str) -> list[dict]:
+    """Every owned game with achievements, for trophies.exe.
+
+    Each is {"app_id", "name", "icon", "unlocked", "total", "last_unlock"};
+    last_unlock is the newest dated unlock (unix time), or None.
+    """
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT a.app_id, g.name, g.icon, a.unlocked, a.total,
+                   (SELECT MAX(u.unlocked_at) FROM unlocks AS u
+                    WHERE u.steam_id = a.steam_id AND u.app_id = a.app_id) AS last_unlock
+            FROM achievement_games AS a
+            JOIN games AS g ON g.app_id = a.app_id
+            JOIN library AS l ON l.steam_id = a.steam_id AND l.app_id = a.app_id
+            WHERE a.steam_id = ? AND a.total > 0
+            """,
+            (steam_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_game_achievements(steam_id: str, app_id: int) -> list[dict]:
+    """Every achievement in one game, unlocked or not, for the game's page in trophies.exe.
+
+    Unlocked ones come first, newest first. Then the locked ones, the most
+    common first: those are the ones most players manage, so probably the
+    easiest to get next. Each has "achieved" (True/False) and "unlocked_at".
+    """
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT i.api_name, i.name, i.description, i.icon, i.percent, u.unlocked_at,
+                   u.api_name IS NOT NULL AS achieved
+            FROM achievement_info AS i
+            LEFT JOIN unlocks AS u ON u.app_id = i.app_id AND u.api_name = i.api_name AND u.steam_id = ?
+            WHERE i.app_id = ?
+            ORDER BY achieved DESC, u.unlocked_at IS NULL, u.unlocked_at DESC,
+                     i.percent IS NULL, i.percent DESC, i.name
+            """,
+            (steam_id, app_id),
+        ).fetchall()
+    return [{**dict(row), "achieved": bool(row["achieved"])} for row in rows]
+
+
+def get_unlock_counts(steam_id: str, bucket: str, since: str = "") -> list[dict]:
+    """How many achievements were unlocked per month ("2026-11") or year ("2026").
+
+    [{"bucket": "2026-10", "unlocks": 12}, ...], oldest first, only periods
+    with unlocks, from `since` on (same text as the buckets). Undated unlocks
+    are left out. Steam dates every unlock, so this goes back further than
+    the play log, which only starts with the first scan.
+    """
+    pattern = {"month": "%Y-%m", "year": "%Y"}[bucket]
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT strftime(?, u.unlocked_at, 'unixepoch', 'localtime') AS bucket, COUNT(*) AS unlocks
+            FROM unlocks AS u
+            JOIN library AS l ON l.steam_id = u.steam_id AND l.app_id = u.app_id
+            WHERE u.steam_id = ? AND u.unlocked_at IS NOT NULL
+            GROUP BY bucket
+            HAVING bucket >= ?
+            ORDER BY bucket
+            """,
+            (pattern, steam_id, since),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def get_shared_achievements(steam_id: str, friend_id: str) -> dict:
     """Achievement totals for two players, over the games with achievements they both own.
 

@@ -86,3 +86,35 @@ def test_playtime_bands():
         make_game(6, "a thousand hours", hours=1000),
     ]
     assert stats.count_by_band(games, edges) == [1, 1, 2, 0, 1, 1]
+
+
+# --- trophies.exe ---
+
+TROPHY_GAMES = [
+    {"app_id": 1, "name": "Hades", "icon": None, "unlocked": 49, "total": 49, "last_unlock": 3000},
+    {"app_id": 2, "name": "celeste", "icon": None, "unlocked": 30, "total": 32, "last_unlock": 5000},
+    {"app_id": 3, "name": "Portal 2", "icon": None, "unlocked": 10, "total": 51, "last_unlock": None},
+    {"app_id": 4, "name": "Among Us", "icon": None, "unlocked": 0, "total": 20, "last_unlock": None},
+]
+
+
+def trophy_order(order):
+    return [game["name"] for game in stats.sort_trophies(TROPHY_GAMES, order)]
+
+
+def test_trophy_orders():
+    assert trophy_order("latest") == ["celeste", "Hades", "Among Us", "Portal 2"]  # undated ones last, A to Z
+    assert trophy_order("closest") == ["celeste", "Portal 2", "Among Us"]  # finished games aren't "close"
+    assert trophy_order("most") == ["Hades", "celeste", "Portal 2", "Among Us"]
+    assert trophy_order("perfect") == ["Hades"]
+    assert trophy_order("untouched") == ["Among Us"]
+    assert trophy_order("name") == ["Among Us", "celeste", "Hades", "Portal 2"]
+    assert trophy_order("no such order") == trophy_order("latest")
+    assert [key for key, _ in stats.trophy_choices()] == list(stats.TROPHY_ORDERS)
+
+
+def test_achievement_overview_averages_only_started_games():
+    overview = stats.achievement_overview(TROPHY_GAMES)
+    assert overview == {"unlocked": 89, "total": 152, "games": 4, "started": 3, "perfect": 1, "average": 71}  # (100% + 94% + 20%) / 3
+    assert stats.achievement_overview([])["average"] == 0
+    assert stats.completion(TROPHY_GAMES[1]) == 94

@@ -1,7 +1,7 @@
 """Storage tests. Each one runs against a fresh temp database (see conftest.py)."""
 
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -242,3 +242,49 @@ def test_the_rarest_unlock_and_which_games_need_rarity():
     assert (rarest["name"], rarest["game"], rarest["percent"]) == ("Done 1", "Hades", 2.5)  # B2_0 is rarer, but locked
     assert storage.games_needing_rarity("me", checked_before=500) == []
     assert sorted(storage.games_needing_rarity("me", checked_before=2000)) == [1, 2]
+
+
+# --- trophies.exe ---
+
+
+def test_achievement_games_lists_owned_games_that_have_achievements():
+    owns("me", make_game(1, "Hades", hours=40), make_game(2, "Garry's Mod", hours=3), make_game(3, "Portal", hours=8))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=2, locked=3))
+    storage.save_achievements("me", 2, 180, [])  # has none: not listed
+    storage.save_achievements("me", 3, 480, make_achievements(3, unlocked=0, locked=4))
+    games = {game["name"]: game for game in storage.get_achievement_games("me")}
+    assert set(games) == {"Hades", "Portal"}
+    assert games["Hades"]["unlocked"] == 2 and games["Hades"]["total"] == 5
+    assert games["Hades"]["last_unlock"] == 1_700_000_000 + 3600  # the newer of the two
+    assert games["Portal"]["last_unlock"] is None
+
+
+def test_game_achievements_list_unlocked_newest_first_then_the_most_common_locked_ones():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=2, locked=3))
+    storage.save_rarity([(1, {"B1_0": 5.0, "B1_1": 60.0, "B1_2": 0.4})])
+    listed = storage.get_game_achievements("me", 1)
+    assert [item["api_name"] for item in listed] == ["A1_1", "A1_0", "B1_1", "B1_0", "B1_2"]
+    assert [item["achieved"] for item in listed] == [True, True, False, False, False]
+    assert listed[2]["unlocked_at"] is None and listed[2]["percent"] == 60.0
+
+
+def test_game_achievements_are_per_player():
+    owns("me", make_game(1, "Hades", hours=40))
+    owns("friend", make_game(1, "Hades", hours=10))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=3))
+    storage.save_achievements("friend", 1, 600, make_achievements(1, unlocked=1, locked=2))
+    assert sum(item["achieved"] for item in storage.get_game_achievements("friend", 1)) == 1
+
+
+def test_unlock_counts_by_month_and_year():
+    owns("me", make_game(1, "Hades", hours=40))
+    achievements = make_achievements(1, unlocked=4)
+    for item, when in zip(achievements, ("2025-12-30", "2026-01-02", "2026-01-20", None)):
+        item["unlocked_at"] = int(datetime.fromisoformat(f"{when}T12:00").timestamp()) if when else None
+    storage.save_achievements("me", 1, 2400, achievements)
+    assert storage.get_unlock_counts("me", "month") == [
+        {"bucket": "2025-12", "unlocks": 1}, {"bucket": "2026-01", "unlocks": 2},
+    ]
+    assert storage.get_unlock_counts("me", "year") == [{"bucket": "2025", "unlocks": 1}, {"bucket": "2026", "unlocks": 2}]
+    assert storage.get_unlock_counts("me", "month", since="2026-01") == [{"bucket": "2026-01", "unlocks": 2}]
