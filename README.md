@@ -19,6 +19,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
 - **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
+- **Lives in the tray**, like Steam or Discord. Closing the window hides it next to the clock instead of quitting (the first time, Windows shows a short notice saying so). Click the icon to bring the window back; right-click it, or use Start > Shut down, to quit. Prefer the old way? Untick "Keep running in the tray" in Start > Settings.
 
 [Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png)
 
@@ -27,7 +28,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 Run `SteamStatsTracker-1.2.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
-- To update, run the newer installer. Your play history and API key stay.
+- To update, run the newer installer. Your play history and API key stay. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
 - To remove it, use **Settings > Apps > Installed apps**. It asks whether to delete your saved data too.
 
 ## Running it from source
@@ -85,6 +86,8 @@ charts.py      decides what each chart shows
 captions.py    the jokes in the warning popups
 demo.py        the made-up player
 wallpaper.py   the wallpaper choice and the imported pictures
+tray.py        the icon next to the clock, and what closing the window does
+preferences.py the settings in settings.exe
 config.py      every setting in one place
 run.bat        sets things up on the first run, then opens the app
 build_exe.bat  builds the app and its installer
@@ -92,7 +95,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         248 tests; any that tried to reach Steam would fail
+tests/         268 tests; any that tried to reach Steam would fail
 ```
 
 A few decisions worth explaining:
@@ -105,7 +108,7 @@ A few decisions worth explaining:
 - **An imported wallpaper is a copy.** The app checks the file's first bytes (not its name) to make sure it's really a PNG, JPG or WebP, then copies it into its data folder, so moving or deleting the original changes nothing. The copy is named after a fingerprint of its contents, so importing the same picture twice doesn't make a duplicate. The folder itself is the gallery: no list to keep in sync, and deleting a picture deletes its file. Pictures are sent to the window with `no-store`, so a deleted one doesn't linger in a cache either.
 - **Names from Steam are untrusted.** Templates escape everything, a Content-Security-Policy blocks inline scripts, and the local server refuses requests that didn't come from its own window.
 - **Errors are written for people.** Bad key, private profile, timeout, no connection: each one is its own exception with a title and message that go straight into a popup. The API key is kept out of error text on purpose.
-- **One copy at a time.** On start the app claims a named Windows mutex. If a copy already holds it, the new one brings that window forward and quits, so a double double-click doesn't give you two windows writing to the same database. The installer checks the same name and asks you to close the app before it updates or removes it.
+- **One copy at a time.** On start the app claims a named Windows mutex. If a copy already holds it, the new one raises a named event (another flag Windows keeps by name) and quits, and the open copy shows its own window when it sees it. That way a second double-click brings the window back even when it's hidden in the tray, and you never get two windows writing to the same database. The installer checks the same name and asks you to close the app before it updates or removes it.
 
 On my machine the dashboard for a 3,000-game library renders in about 25 ms, and saving a scan of that size takes about 14 ms.
 
@@ -137,4 +140,5 @@ py -m pytest
 
 - Fonts: [Fredoka](https://fonts.google.com/specimen/Fredoka) and [Josefin Sans](https://fonts.google.com/specimen/Josefin+Sans), both under the SIL Open Font License (copies in `static/fonts`).
 - Charts: [Chart.js](https://www.chartjs.org/) 4.6.1, MIT licence.
+- Tray icon: [pystray](https://github.com/moses-palmer/pystray), LGPL-3.0, used unchanged as a library, and [Pillow](https://python-pillow.org/), MIT-CMU licence.
 - Data: the [Steam Web API](https://developer.valvesoftware.com/wiki/Steam_Web_API). This project isn't affiliated with Valve.
