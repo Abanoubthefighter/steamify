@@ -76,15 +76,17 @@ def scan(query: str, force: bool = False):
 def games_to_check(games: list[dict], checked_minutes: dict[int, int]) -> list[dict]:
     """The games whose achievements might have changed since they were last checked.
 
-    Only played games that have achievements at all, and of those only the
-    ones played since the last check. Achievements only unlock while playing,
-    so on a normal day this is a handful of games, not the whole library.
+    That's every game played since its last check (all played games, the
+    first time). Achievements only unlock while playing, so on a normal day
+    this is a handful of games, not the whole library.
+
+    Steam flags the games that have achievements ("has_stats"), but the flag
+    isn't always right, so unflagged games are asked about too, after the
+    flagged ones. One that turns out to have none is saved as such, and only
+    asked about again once it's been played more.
     """
-    return [
-        game
-        for game in games
-        if game.get("has_stats") and game["minutes"] > checked_minutes.get(game["app_id"], 0)
-    ]
+    todo = [game for game in games if game["minutes"] > checked_minutes.get(game["app_id"], 0)]
+    return sorted(todo, key=lambda game: not game.get("has_stats"))  # flagged first; otherwise same order
 
 
 def check_achievements(steam_id: str, games: list[dict]):

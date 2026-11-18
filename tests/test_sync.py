@@ -27,12 +27,13 @@ def steam(monkeypatch):
     monkeypatch.setattr(api, "get_player", record("player", lambda: make_profile(ME)))
     monkeypatch.setattr(api, "get_level", record("level", 12))
     monkeypatch.setattr(api, "get_owned_games", record("games", lambda: [dict(game) for game in library]))
+    monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])  # unless a test says otherwise
     return calls, library
 
 
 def test_scan_reports_every_step_then_the_result(steam):
     events = list(sync.scan("tester"))
-    assert [event["label"] for event in events[:-1]] == list(sync.STEPS)
+    assert [event["label"] for event in events[:-1] if "label" in event] == list(sync.STEPS)
     assert events[-1] == {"steam_id": ME, "gained": 0}
     assert storage.get_player(ME)["level"] == 12
     assert len(storage.get_library(ME)) == 1
@@ -87,7 +88,7 @@ def achievements(steam, monkeypatch):
         make_game(30, "Never played", hours=0, has_stats=True),
         make_game(40, "Played a lot", hours=50, has_stats=True),
     ]
-    answers = {10: make_achievements(10, unlocked=3, locked=1), 40: make_achievements(40, unlocked=2)}
+    answers = {10: make_achievements(10, unlocked=3, locked=1), 20: [], 40: make_achievements(40, unlocked=2)}
     asked = []
 
     def fake(steam_id, app_id):
@@ -107,13 +108,20 @@ rarity = {}       # what the fake Steam says about rarity: {app_id: {api name: p
 icons_asked = []  # games the fake Steam was asked for icons
 
 
-def test_only_played_games_with_achievements_are_checked(achievements):
+def test_every_played_game_is_checked(achievements):
     asked, _, _ = achievements
     events = list(sync.scan("tester"))
-    assert sorted(asked) == [10, 40]
+    assert sorted(asked) == [10, 20, 40]  # not 30: never played, so nothing can be unlocked
     progress = [event.get("label") or event.get("detail") for event in events[:-1]]
-    assert progress[-6:] == ["Checking achievements", "1/2", "2/2", "Checking how rare they are", "1/2", "2/2"]
-    assert storage.get_achievement_summary(ME) == {"unlocked": 5, "total": 6, "games": 2, "perfect": 1, "checked": 2}
+    assert progress[-7:] == ["Checking achievements", "1/3", "2/3", "3/3", "Checking how rare they are", "1/2", "2/2"]
+    assert storage.get_achievement_summary(ME) == {"unlocked": 5, "total": 6, "games": 2, "perfect": 1, "checked": 3}
+
+
+def test_a_game_steam_does_not_flag_can_still_have_achievements(achievements):
+    asked, answers, _ = achievements
+    answers[20] = make_achievements(20, unlocked=1, locked=1)  # Steam's has_stats flag was wrong
+    list(sync.scan("tester"))
+    assert storage.get_achievement_summary(ME)["games"] == 3
 
 
 def test_games_are_only_checked_again_once_they_were_played(achievements):
@@ -132,7 +140,7 @@ def test_a_game_that_times_out_is_tried_again_next_scan(achievements):
     answers[10] = api.SteamTimeout()
     events = list(sync.scan("tester"))
     assert events[-1] == {"steam_id": ME, "gained": 0}  # the scan itself still finishes
-    assert storage.get_achievement_summary(ME)["checked"] == 1
+    assert storage.get_achievement_summary(ME)["checked"] == 2  # 20 and 40, not 10
     answers[10] = make_achievements(10, unlocked=1)
     asked.clear()
     list(sync.scan("tester", force=True))
@@ -161,14 +169,14 @@ def test_being_told_to_slow_down_waits_then_carries_on(achievements, waits, monk
     monkeypatch.setattr(api, "get_achievements", slow_down_once)
     events = list(sync.scan("tester"))
     assert waits == [sync.config.SLOW_DOWN_SECONDS]
-    assert {"detail": "0/2, Steam asked us to wait"} in events
-    assert storage.get_achievement_summary(ME)["checked"] == 2
+    assert {"detail": "0/3, Steam asked us to wait"} in events
+    assert storage.get_achievement_summary(ME)["checked"] == 3
 
 
 def test_if_steam_keeps_saying_slow_down_the_rest_wait_for_the_next_scan(achievements, waits):
     asked, answers, _ = achievements
-    answers[10] = api.RateLimited()
-    answers[40] = api.RateLimited()
+    for app_id in answers:
+        answers[app_id] = api.RateLimited()
     events = list(sync.scan("tester"))
     assert events[-1]["steam_id"] == ME  # the scan itself still finishes
     seconds = sync.config.SLOW_DOWN_SECONDS
@@ -191,6 +199,11 @@ def test_games_to_check():
     games = [make_game(1, "a", hours=1, has_stats=True), make_game(2, "b", hours=2, has_stats=True)]
     assert sync.games_to_check(games, {1: 60, 2: 60}) == [games[1]]
     assert sync.games_to_check(games, {}) == games
+
+
+def test_games_steam_flags_are_checked_first():
+    games = [make_game(1, "unflagged", hours=1), make_game(2, "flagged", hours=1, has_stats=True), make_game(3, "unflagged too", hours=1)]
+    assert [game["app_id"] for game in sync.games_to_check(games, {})] == [2, 1, 3]
 
 
 def test_rarity_is_fetched_for_games_with_unlocks_then_left_alone_for_a_week(achievements, monkeypatch):

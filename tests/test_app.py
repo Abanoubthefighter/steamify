@@ -38,6 +38,12 @@ def steam(monkeypatch):
     monkeypatch.setattr(api, "get_player", lambda steam_id: make_profile(steam_id, name=f"player {steam_id[-1]}"))
     monkeypatch.setattr(api, "get_level", lambda steam_id: 7)
     monkeypatch.setattr(api, "get_owned_games", owned_games)
+    monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])  # these games have none
+
+
+def timing_out(steam_id, app_id):
+    """A get_achievements that never gets an answer, so no game ends up checked."""
+    raise api.SteamTimeout()
 
 
 def scan(client, **form):
@@ -137,7 +143,8 @@ def test_real_games_link_to_their_art_and_store_page(client):
 def test_scan_streams_progress_then_points_at_the_dashboard(client, steam):
     events = scan(client, player="me")
     steps = len(sync.STEPS)
-    assert [event["step"] for event in events[:-1]] == list(range(1, steps + 1))
+    # A long step sends extra lines ("Checking achievements 12/40") with the same step number.
+    assert list(dict.fromkeys(event["step"] for event in events[:-1])) == list(range(1, steps + 1))
     assert all(event["steps"] == steps for event in events[:-1])
     assert events[-1] == {"done": True, "gained": 0, "url": f"/player/{ME}"}
 
@@ -158,7 +165,8 @@ def test_scan_with_nothing_typed(client):
 
 def test_a_private_friend_does_not_block_the_players_own_dashboard(client, steam):
     events = scan(client, player="me", friend="friend")
-    assert events[len(sync.STEPS)]["label"].startswith("Friend: ")
+    first_friend_step = next(event for event in events if event.get("step") == len(sync.STEPS) + 1)
+    assert first_friend_step["label"].startswith("Friend: ")
     assert events[-1]["error"]["code"] == "private"
     assert events[-1]["url"] == f"/player/{ME}"
 
@@ -354,13 +362,15 @@ def test_the_demo_player_has_achievements_to_show(client):
         assert heading in page
 
 
-def test_achievements_wait_for_a_scan_when_none_were_checked(client, steam):
-    scan(client, player="me")  # the steam fixture's games have no achievements flag, so none get checked
+def test_achievements_wait_for_a_scan_when_none_were_checked(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_achievements", timing_out)
+    scan(client, player="me")
     page = client.get(f"/player/{ME}").text
     assert "Achievements come in with the next scan" in page
 
 
 def test_achievements_explain_the_key_when_there_is_none(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_achievements", timing_out)
     scan(client, player="me")
     monkeypatch.setattr(config, "STEAM_API_KEY", "")
     assert "Achievements need a Steam API key" in client.get(f"/player/{ME}").text
