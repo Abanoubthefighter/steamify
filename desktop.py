@@ -7,7 +7,7 @@ points it at that address. An icon goes in the tray next to the clock
 (tray.py). Closing the window hides it there, unless "Keep running in the
 tray" is off in settings.exe; quitting from the icon or from Start > Shut
 down ends the whole program. While it runs, background.py syncs the saved
-players about once an hour.
+players about once an hour and badges.py adds up the running time.
 
     py desktop.py
 """
@@ -54,6 +54,8 @@ import startup  # noqa: E402
 import tray as tray_icon  # noqa: E402
 from app import app, prepare  # noqa: E402
 from background import BackgroundSync  # noqa: E402
+from badges import RunningClock  # noqa: E402
+from captions import badge_notice  # noqa: E402
 from tray import Tray  # noqa: E402
 
 try:
@@ -249,9 +251,12 @@ def main() -> None:
     tray = Tray(sync_now=syncing.sync_now)
     tray.attach(create_window(url, Bridge(tray), hidden=starts_hidden(sys.argv)))
     listen_for_second_copies(tray.show_window)  # a second double-click brings this window back
+    clock = RunningClock(on_badge=lambda badge: tray.notify(badge_notice(badge)))
+    clock.start()  # adds up running time for the badges (badges.py)
     try:
         webview.start(debug=config.DEBUG)  # blocks until the window is really closed, not just hidden
     finally:
+        clock.stop()  # the last part-minute counts too
         tray.stop()  # the icon has its own thread, which would keep the program alive
 
 

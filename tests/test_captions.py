@@ -107,3 +107,12 @@ def test_achievement_caption_picks_a_line_for_the_numbers(perfect, percent, word
 def test_versus_achievement_caption(mine, theirs, my_perfect, their_perfect, words):
     duel = {"my_unlocked": mine, "their_unlocked": theirs, "my_perfect": my_perfect, "their_perfect": their_perfect}
     assert words in captions.versus_achievement_caption("pal", duel)
+
+
+def test_every_badge_has_a_line():
+    import config
+
+    for key, name, hours in config.BADGES:
+        assert captions.badge_line({"key": key}), key
+    assert captions.badge_line(None)
+    assert "Floppy" in captions.badge_notice({"name": "Floppy", "hours": 12})

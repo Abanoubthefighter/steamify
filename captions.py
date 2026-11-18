@@ -1,4 +1,4 @@
-"""The words in warning.exe, versus.exe and achievements.exe.
+"""The words in warning.exe, versus.exe, achievements.exe and badges.exe.
 
 All the jokes live here on purpose, so they're easy to find, edit or delete.
 Each *_alert function looks at the numbers and returns one popup, or None
@@ -138,3 +138,26 @@ def versus_achievement_caption(friend_name: str, duel: dict) -> str:
     if mine > theirs:
         return f"{plural(mine - theirs, 'achievement')} ahead on the games you share. Rub it in, politely."
     return f"{friend_name} has {plural(theirs - mine, 'achievement')} more on the games you share. Time to grind."
+
+
+# --- badges.exe ------------------------------------------------------------------
+
+# One line per badge (keys from config.BADGES), plus None for "not even the first one yet".
+BADGE_LINES = {
+    None: "Keep the app open, in the window or the tray, and the first badge turns up by itself.",
+    "dialup": "You've connected. Please don't pick up the phone.",
+    "floppy": "1.44 MB of commitment. Don't lose the disk.",
+    "cdrom": "650 MB of dedication, and a free trial nobody asked for.",
+    "dvd": "Double-sided devotion. Region free, too.",
+    "harddrive": "The app lives here now. Apparently so do you.",
+}
+
+
+def badge_line(badge: dict | None) -> str:
+    """The remark under the current badge in badges.exe."""
+    return BADGE_LINES.get(badge["key"] if badge else None, "")
+
+
+def badge_notice(badge: dict) -> str:
+    """The Windows notice when a badge is earned while the app runs."""
+    return f"New badge: {badge['name']}. That's {badge['hours']} hours of keeping the app running."

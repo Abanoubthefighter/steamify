@@ -111,3 +111,11 @@ def test_the_menu_has_sync_now_only_when_there_is_something_to_run(monkeypatch):
     assert tray_module._make_icon(Tray(sync_now=lambda: None)).labels == ["Open", "Sync now", "Quit"]
     assert tray_module._make_icon(Tray()).labels == ["Open", "Quit"]
     assert len(started) == 2  # both icons were started on their own thread
+
+
+def test_notify_goes_through_the_icon_if_there_is_one():
+    tray, _, icon = tray_with()
+    tray.notify("hello")
+    assert icon.notices == ["hello"]
+    no_icon, _, _ = tray_with(icon=False)
+    no_icon.notify("hello")  # nothing to show it with, and no error either

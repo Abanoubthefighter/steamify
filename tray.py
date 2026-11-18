@@ -70,6 +70,11 @@ class Tray:
         if self.window is not None:
             self.window.destroy()
 
+    def notify(self, message: str) -> None:
+        """A Windows notice from the tray icon (nothing happens without one)."""
+        if self.icon is not None:
+            self.icon.notify(message, config.APP_NAME)
+
     def stop(self) -> None:
         """Take the icon out of the tray. Called on the way out."""
         if self.icon is not None:
