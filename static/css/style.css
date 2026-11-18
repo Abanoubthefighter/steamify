@@ -1338,11 +1338,78 @@ li:last-child > .row {
   transform-origin: 0 0;
 }
 
-.swatch__picture {
+.pictures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 0;
+}
+
+/* The imported pictures, three to a row. After about three rows the list
+   scrolls on its own, so the buttons below never get pushed out of view. */
+.picture-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  max-height: 228px;
+  overflow-y: auto;
+  padding: 8px 10px 6px 4px; /* room for the selection ring and the delete buttons */
+}
+
+.picture-grid:empty {
+  display: none;
+}
+
+.picture-tile {
+  position: relative;
+}
+
+.picture-tile__choice {
+  display: block;
+  cursor: pointer;
+}
+
+/* The radio button itself stays invisible but focusable; the picture shows its state. */
+.picture-tile__radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.picture-tile__thumb {
   display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
+  background: var(--paper);
+  border: var(--line-thin) solid var(--ink);
+}
+
+.picture-tile__radio:checked + .picture-tile__thumb {
+  box-shadow:
+    0 0 0 3px var(--sand),
+    0 0 0 5px var(--ink); /* the picked one gets a sand ring with an ink edge */
+}
+
+.picture-tile__radio:focus-visible + .picture-tile__thumb {
+  outline: var(--line) dashed var(--ink);
+  outline-offset: 6px;
+}
+
+.picture-tile__delete {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+}
+
+/* the picture shown in "Delete this picture?" */
+.confirm__picture {
+  display: block;
+  width: 140px;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border: var(--line-thin) solid var(--ink);
 }
 
 .picture-import {

@@ -356,8 +356,12 @@ def wallpaper_picture(name: str):
     """One imported picture. Only names in the list are ever handed out, nothing else in the folder."""
     if name not in wallpaper.pictures():
         abort(404)
-    # Every import gets a new file name, so the browser may keep this one for good.
-    return send_from_directory(config.WALLPAPER_DIR, name, max_age=31_536_000)
+    response = send_from_directory(config.WALLPAPER_DIR, name)
+    # Don't let the window keep its own copy. A deleted picture should really
+    # be gone, not linger in a cache folder. It comes from this computer's own
+    # disk, so loading it again is quick.
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # --- Safety nets -------------------------------------------------------------

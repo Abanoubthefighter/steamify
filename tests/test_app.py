@@ -309,6 +309,7 @@ def test_every_picture_in_the_list_is_served_and_can_be_picked(client):
 
 def test_a_deleted_picture_leaves_the_list_and_stops_being_served(client):
     picture = upload(client, PNG).json
+    assert client.get(picture["picture_url"]).headers["Cache-Control"] == "no-store"  # no copy left in a cache
     reply = client.post(f"/wallpaper/picture/{picture['picture']}/delete")
     assert reply.status_code == 200
     assert reply.json["pictures"] == [] and reply.json["pattern"] == config.DEFAULT_WALLPAPER

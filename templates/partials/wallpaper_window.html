@@ -1,9 +1,9 @@
 {#
   wallpaper.exe: a floating window, opened from the start menu (System >
-  Change wallpaper). The choices come from config.WALLPAPER_PATTERNS, and
-  each preview uses the same CSS class as the real wallpaper. What's ticked,
-  the slider position and the picture preview are filled in by
-  static/js/wallpaper.js when the window opens.
+  Change wallpaper). The built-in choices come from config.WALLPAPER_PATTERNS,
+  and each preview uses the same CSS class as the real wallpaper. The list of
+  imported pictures, what's ticked and the slider position are filled in by
+  static/js/wallpaper.js when the window opens, from the page's wallpaper data.
 #}
 {% from "partials/wallpaper_art.html" import art %}
 <template data-popup="wallpaper" data-title="wallpaper.exe" data-color="sand">
@@ -17,24 +17,25 @@
         {{ label }}
       </label>
       {% endfor %}
-      <label data-picture-choice hidden>
-        <input type="radio" name="pattern" value="picture">
-        <span class="swatch" aria-hidden="true"><img class="swatch__picture" alt="" data-picture-thumb></span>
-        Your picture
-      </label>
     </fieldset>
 
-    <div class="picture-import">
-      {# The real file picker is hidden; the button opens it, so it looks like the other buttons. #}
-      <input type="file" accept="image/png,image/jpeg,image/webp" data-picture-file hidden>
-      <button class="btn btn--small" type="button" data-picture-pick>Import picture…</button>
-      <p class="note">PNG, JPG or WebP, up to {{ wallpaper_max_mb }} MB. The app keeps its own copy.</p>
-    </div>
+    <fieldset class="pictures">
+      <legend class="label">Your pictures</legend>
+      {# One tile per imported picture; after three rows the list scrolls. #}
+      <div class="picture-grid" data-picture-grid></div>
+      <p class="note" data-no-pictures>None yet. Import one and it stays here until you delete it.</p>
+      <div class="picture-import">
+        {# The real file picker is hidden; the button opens it, so it looks like the other buttons. #}
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-picture-file hidden>
+        <button class="btn btn--small" type="button" data-picture-pick>Import picture…</button>
+        <p class="note">PNG, JPG or WebP, up to {{ wallpaper_max_mb }} MB. The app keeps its own copy.</p>
+      </div>
+    </fieldset>
 
     <div class="dim">
       <label class="label" for="wallpaper-dim">Dim the picture <span class="label__hint" data-dim-value></span></label>
       <input class="slider" id="wallpaper-dim" type="range" name="dim" min="0" max="{{ wallpaper_dim_max }}" step="5">
-      <p class="note" data-dim-note>Pick your picture above to use this.</p>
+      <p class="note" data-dim-note>Pick one of your pictures to use this.</p>
     </div>
 
     <div class="btn-row">
@@ -42,4 +43,26 @@
       <button class="btn btn--small" type="button" data-action="close">Done</button>
     </div>
   </form>
+</template>
+
+{# One imported picture in the list: pick it by clicking the picture, delete it with the round red button. #}
+<template data-picture-tile>
+  <div class="picture-tile">
+    <label class="picture-tile__choice">
+      <input class="picture-tile__radio" type="radio" name="pattern" value="picture">
+      <img class="picture-tile__thumb" alt="" loading="lazy" decoding="async">
+    </label>
+    <button class="ctrl ctrl--close picture-tile__delete" type="button" data-picture-delete></button>
+  </div>
+</template>
+
+{# Asked before a picture is deleted. #}
+<template data-picture-confirm>
+  <img class="confirm__picture" alt="">
+  <h3 class="heading">Delete this picture?</h3>
+  <p>It's removed from the app. The original file on your computer stays where it is.</p>
+  <div class="btn-row">
+    <button class="btn btn--small" type="button" data-confirm-delete>Delete</button>
+    <button class="btn btn--small" type="button" data-action="close" data-autofocus>Keep it</button>
+  </div>
 </template>

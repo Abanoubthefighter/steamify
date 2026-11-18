@@ -2,29 +2,21 @@
 // straight away and saves it on the server (wallpaper.py), so there's no
 // Apply button. If saving fails, the wallpaper goes back to how it was.
 
-import { addMenuAction, openTemplatePopup, showMessage } from "./desktop.js";
+import { addMenuAction, closePopup, openPopup, openTemplatePopup, showMessage } from "./desktop.js";
 
 const layer = document.querySelector("[data-wallpaper]");
-let saved = null; // the wallpaper as the server last confirmed it
+// The wallpaper as the server last confirmed it:
+// { pattern, dim, picture, picture_url, pictures: [{ name, url }, ...] }
+let saved = null;
 let dialog = null; // the open wallpaper.exe window, if there is one
 
 export function initWallpaper() {
   if (!layer) return;
-  saved = readLayer();
+  saved = JSON.parse(document.getElementById("wallpaper-data").textContent);
   addMenuAction("wallpaper", openDialog);
 }
 
 // --- The wallpaper layer -----------------------------------------------------
-
-/** The wallpaper the page was drawn with: { pattern, dim, picture_url }. */
-function readLayer() {
-  const pattern = [...layer.classList].find((name) => name.startsWith("pattern--"));
-  return {
-    pattern: pattern?.slice("pattern--".length),
-    dim: Number(layer.dataset.dim),
-    picture_url: layer.querySelector("[data-wallpaper-picture]")?.getAttribute("src") ?? null,
-  };
-}
 
 /** Draw a wallpaper: swap the pattern class, the dim level and the picture. */
 function showOnDesktop({ pattern, dim, picture_url }) {
@@ -61,20 +53,19 @@ function openDialog() {
 
   form.addEventListener("change", onChange);
   form.addEventListener("input", onSlide);
-  form.querySelector("[data-picture-pick]").addEventListener("click", () => {
-    form.querySelector("[data-picture-file]").click(); // opens Windows' own file picker
-  });
-  form.querySelector("[data-wallpaper-reset]").addEventListener("click", () => save("/wallpaper/reset"));
+  form.addEventListener("click", onClick);
 }
 
 /** Make wallpaper.exe (if it's open) match a wallpaper. */
-function showInDialog({ pattern, dim, picture_url }) {
+function showInDialog({ pattern, dim, picture, pictures }) {
   if (!dialog?.isConnected) return;
   const form = dialog.querySelector("[data-wallpaper-form]");
+  showPictures(form, pictures);
 
-  form.querySelector("[data-picture-choice]").hidden = !picture_url;
-  if (picture_url) form.querySelector("[data-picture-thumb]").src = picture_url;
-  const radio = form.querySelector(`input[name="pattern"][value="${CSS.escape(pattern)}"]`);
+  const radio =
+    pattern === "picture"
+      ? [...form.querySelectorAll("[data-picture]")].find((input) => input.dataset.picture === picture)
+      : form.querySelector(`input[name="pattern"][value="${CSS.escape(pattern)}"]`);
   if (radio) radio.checked = true;
 
   // The slider only means something for a picture; patterns are never dimmed.
@@ -85,6 +76,33 @@ function showInDialog({ pattern, dim, picture_url }) {
   showDimValue(dim);
 }
 
+/** One tile per imported picture, newest first. Only redrawn when the list itself changed. */
+function showPictures(form, pictures) {
+  const grid = form.querySelector("[data-picture-grid]");
+  const names = pictures.map((picture) => picture.name).join("|");
+  form.querySelector("[data-no-pictures]").hidden = pictures.length > 0;
+  if (grid.dataset.names === names) return; // keeps focus where it is
+  grid.dataset.names = names;
+
+  const template = document.querySelector("template[data-picture-tile]");
+  grid.replaceChildren(
+    ...pictures.map(({ name, url }, index) => {
+      const tile = template.content.firstElementChild.cloneNode(true);
+      const radio = tile.querySelector("input");
+      radio.dataset.picture = name;
+      radio.dataset.pictureUrl = url;
+      radio.setAttribute("aria-label", `Picture ${index + 1}`);
+      tile.querySelector("img").src = url;
+      const remove = tile.querySelector("[data-picture-delete]");
+      remove.dataset.picture = name;
+      remove.dataset.pictureUrl = url;
+      remove.setAttribute("aria-label", `Delete picture ${index + 1}`);
+      remove.title = "Delete this picture";
+      return tile;
+    }),
+  );
+}
+
 function showDimValue(dim) {
   dialog.querySelector("[data-dim-value]").textContent = `${dim}%`;
 }
@@ -93,12 +111,19 @@ function onChange(event) {
   const input = event.target;
   if ("pictureFile" in input.dataset) {
     importPicture(input);
-  } else if (input.name === "pattern" || input.name === "dim") {
-    const body = new FormData();
-    body.set(input.name, input.value);
-    showOnDesktop({ ...saved, [input.name]: input.value }); // show it now, save it in the background
-    save("/wallpaper", body);
+    return;
   }
+  if (input.name !== "pattern" && input.name !== "dim") return;
+
+  const body = new FormData();
+  body.set(input.name, input.value);
+  const preview = { ...saved, [input.name]: input.value };
+  if (input.dataset.picture) {
+    body.set("picture", input.dataset.picture);
+    preview.picture_url = input.dataset.pictureUrl;
+  }
+  showOnDesktop(preview); // show it now, save it in the background
+  save("/wallpaper", body);
 }
 
 /** While the slider is dragged, dim the picture live. It's saved when it's let go (onChange). */
@@ -107,6 +132,31 @@ function onSlide(event) {
   const dim = Number(event.target.value);
   showOnDesktop({ ...saved, dim });
   showDimValue(dim);
+}
+
+function onClick(event) {
+  const form = event.currentTarget;
+  if (event.target.closest("[data-picture-pick]")) {
+    form.querySelector("[data-picture-file]").click(); // opens Windows' own file picker
+  } else if (event.target.closest("[data-wallpaper-reset]")) {
+    save("/wallpaper/reset");
+  } else {
+    const remove = event.target.closest("[data-picture-delete]");
+    if (remove) askToDelete(remove.dataset.picture, remove.dataset.pictureUrl);
+  }
+}
+
+/** "Delete this picture?" with the picture itself, so it's clear which one. */
+function askToDelete(name, url) {
+  const content = document.querySelector("template[data-picture-confirm]").content.cloneNode(true);
+  content.querySelector("img").src = url;
+  const popup = openPopup({ title: "delete.exe", color: "red", content });
+  popup.querySelector("[data-confirm-delete]").addEventListener("click", async () => {
+    closePopup(popup);
+    await save(`/wallpaper/picture/${encodeURIComponent(name)}/delete`);
+    // The tile that had focus is gone now, so put the keyboard somewhere sensible.
+    dialog?.querySelector("input:checked, [data-picture-pick]")?.focus();
+  });
 }
 
 async function importPicture(input) {

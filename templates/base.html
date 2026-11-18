@@ -23,6 +23,8 @@
     <img class="wallpaper__picture" src="{{ wp.picture_url }}" alt="" data-wallpaper-picture>
     {% endif %}
   </div>
+  {# The same wallpaper as data, plus the list of imported pictures, for wallpaper.exe. #}
+  <script type="application/json" id="wallpaper-data">{{ wp | tojson }}</script>
 
   {% block desktop %}{% endblock %}
 
