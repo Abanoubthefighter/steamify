@@ -6,7 +6,8 @@ address only this computer can reach. Then pywebview opens a native window
 points it at that address. An icon goes in the tray next to the clock
 (tray.py). Closing the window hides it there, unless "Keep running in the
 tray" is off in settings.exe; quitting from the icon or from Start > Shut
-down ends the whole program.
+down ends the whole program. While it runs, background.py syncs the saved
+players about once an hour.
 
     py desktop.py
 """
@@ -50,6 +51,7 @@ from werkzeug.serving import make_server  # noqa: E402
 
 import config  # noqa: E402
 from app import app, prepare  # noqa: E402
+from background import BackgroundSync  # noqa: E402
 from tray import Tray  # noqa: E402
 
 try:
@@ -231,7 +233,9 @@ def main() -> None:
             return
 
     app.config["DESKTOP_APP"] = True  # read per request, so settings.exe can offer the tray from now on
-    tray = Tray()
+    syncing = BackgroundSync()
+    syncing.start()  # every saved player, about once an hour, while the app is open
+    tray = Tray(sync_now=syncing.sync_now)
     tray.attach(create_window(url, Bridge(tray)))
     listen_for_second_copies(tray.show_window)  # a second double-click brings this window back
     try:

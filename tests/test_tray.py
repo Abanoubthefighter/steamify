@@ -1,7 +1,10 @@
 """tray.py: what the close button does, with a pretend window and icon."""
 
+import pytest
+
 import config
 import preferences
+import tray as tray_module
 from tray import Tray
 
 
@@ -89,3 +92,22 @@ def test_stop_takes_the_icon_away_once():
     tray.stop()
     tray.stop()
     assert icon.stopped and tray.icon is None
+
+
+def test_the_menu_has_sync_now_only_when_there_is_something_to_run(monkeypatch):
+    pystray = tray_module.pystray
+    if pystray is None:
+        pytest.skip("pystray isn't installed, so there's no menu")
+    started = []
+
+    class FakeIcon:
+        def __init__(self, name, image, title, menu):
+            self.labels = [item.text for item in menu.items if item is not pystray.Menu.SEPARATOR]
+
+        def run_detached(self):
+            started.append(self)
+
+    monkeypatch.setattr(pystray, "Icon", FakeIcon)
+    assert tray_module._make_icon(Tray(sync_now=lambda: None)).labels == ["Open", "Sync now", "Quit"]
+    assert tray_module._make_icon(Tray()).labels == ["Open", "Quit"]
+    assert len(started) == 2  # both icons were started on their own thread

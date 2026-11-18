@@ -2,8 +2,9 @@
 
 With "Keep running in the tray" on (settings.exe), closing the window only
 hides it, the way Steam and Discord do: the app goes on running with an icon
-in the notification area. Clicking the icon brings the window back and its
-right-click menu can quit for real. Start > Shut down quits for real too.
+in the notification area. Clicking the icon brings the window back, and its
+right-click menu can sync everyone straight away (background.py) or quit
+for real. Start > Shut down quits for real too.
 
 pystray draws the icon and runs its own little thread for it. If pystray
 isn't installed (an older .venv, say), there's simply no icon and the close
@@ -29,10 +30,11 @@ class Tray:
     for Shut down), then attach() hands it the window.
     """
 
-    def __init__(self, make_icon=None):
+    def __init__(self, sync_now=None, make_icon=None):
         self.window = None
         self.icon = None
         self.quitting = False  # set once a real quit has started, so closing stops being cancelled
+        self.sync_now = sync_now  # what "Sync now" in the menu runs; no such item without it
         self._make_icon = make_icon or _make_icon
 
     def attach(self, window) -> None:
@@ -74,11 +76,14 @@ def _make_icon(tray: Tray):
     """The real icon, already running on its own thread. None without pystray."""
     if pystray is None:
         return None
-    menu = pystray.Menu(
+    items = [
         # default=True: a plain click on the icon does the same as "Open".
         pystray.MenuItem("Open", tray.show_window, default=True),
+        pystray.MenuItem("Sync now", tray.sync_now) if tray.sync_now else None,
+        pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", tray.quit),
-    )
+    ]
+    menu = pystray.Menu(*(item for item in items if item is not None))
     icon = pystray.Icon(config.APP_ID, Image.open(ICON_FILE), config.APP_NAME, menu)
     icon.run_detached()
     return icon
