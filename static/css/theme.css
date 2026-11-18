@@ -57,9 +57,16 @@
   --red: #f2552c;        /* title bars and anything that should pop */
   --sand: #f2c27c;       /* title bars and buttons */
   --night: #29233f;      /* the media player screen */
-  --cream: #fff4e3;      /* stars, light text, highlights */
+  --cream: #fff4e3;      /* light text, highlights, the media player's stars */
   --green: #5bd17a;      /* the "online" dot */
   --red-ink: #bf3510;    /* --red, deepened so small text stays readable on paper */
+
+  /* --- Wallpaper ------------------------------------------------------------
+     A sunburst of thin rays over --bg. Keep --wallpaper-ink close to --bg so
+     the pattern stays in the background and the windows stay the focus.     */
+  --wallpaper-ink: #ef9744;      /* the darker rays */
+  --wallpaper-rays: 20;          /* how many darker rays go all the way round */
+  --wallpaper-center: 50% 100%;  /* where they start (across, down): behind the taskbar */
 
   /* --- Type ---------------------------------------------------------------- */
   --font-ui: "Fredoka", "Segoe UI", sans-serif;          /* titles, buttons, numbers */

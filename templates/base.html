@@ -12,11 +12,8 @@
 </head>
 <body>
 
-  {# The wallpaper: sparkles and dots that sit behind every window. #}
-  <div class="wallpaper" aria-hidden="true">
-    {% for _ in range(7) %}<span class="sparkle"></span>{% endfor %}
-    {% for _ in range(6) %}<i class="dot"></i>{% endfor %}
-  </div>
+  {# The wallpaper behind every window. Its pattern is drawn in style.css. #}
+  <div class="wallpaper" aria-hidden="true"></div>
 
   {% block desktop %}{% endblock %}
 

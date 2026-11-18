@@ -113,46 +113,24 @@ a {
 
 /* --- Wallpaper ----------------------------------------------------------- */
 
+/* A sunburst behind everything. It's fixed, so the windows scroll over it
+   while the rays stay put, like a real desktop.
+
+   A conic gradient changes colour as it goes round a point, like slices of
+   a pie. With hard stops (each colour starts exactly where the last one
+   ends) nothing fades: the slices are flat, alternating --wallpaper-ink and
+   --bg. Each ray and each gap is half of one 360deg / rays step.            */
 .wallpaper {
+  --ray: calc(180deg / var(--wallpaper-rays));
   position: fixed;
   inset: 0;
-  overflow: hidden;
   pointer-events: none;
+  background: repeating-conic-gradient(
+    at var(--wallpaper-center),
+    var(--wallpaper-ink) 0 var(--ray),
+    var(--bg) 0 calc(var(--ray) * 2)
+  );
 }
-
-.sparkle {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  background: var(--cream);
-  /* a four-pointed star, drawn as a shape so it doesn't depend on a font */
-  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
-}
-
-.dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--cream);
-  border: 1.5px solid var(--ink);
-}
-
-/* Where each one sits. Move them, or add more in base.html. */
-.sparkle:nth-of-type(1) { top: 3%; left: 7%; }
-.sparkle:nth-of-type(2) { top: 10%; right: 5%; }
-.sparkle:nth-of-type(3) { top: 46%; left: 1.5%; }
-.sparkle:nth-of-type(4) { top: 66%; right: 2.5%; }
-.sparkle:nth-of-type(5) { top: 84%; left: 9%; }
-.sparkle:nth-of-type(6) { top: 90%; right: 16%; }
-.sparkle:nth-of-type(7) { top: 30%; right: 1%; width: 14px; height: 14px; }
-
-.dot:nth-of-type(1) { top: 6%; left: 30%; }
-.dot:nth-of-type(2) { top: 38%; right: 2%; }
-.dot:nth-of-type(3) { top: 74%; left: 3.5%; }
-.dot:nth-of-type(4) { top: 94%; right: 40%; }
-.dot:nth-of-type(5) { top: 20%; left: 2%; }
-.dot:nth-of-type(6) { top: 55%; right: 4.5%; }
 
 /* --- Desktop: the grid the windows sit in -------------------------------- */
 
@@ -1413,20 +1391,6 @@ li:last-child > .row {
 
 .is-syncing .icon-box--doc {
   animation: hop 0.6s steps(2, end) infinite;
-}
-
-@keyframes twinkle {
-  50% {
-    scale: 0.6;
-  }
-}
-
-.sparkle:nth-of-type(odd) {
-  animation: twinkle 3.2s steps(2, end) infinite;
-}
-
-.sparkle:nth-of-type(3n) {
-  animation-delay: 1.3s;
 }
 
 @media (prefers-reduced-motion: reduce) {
