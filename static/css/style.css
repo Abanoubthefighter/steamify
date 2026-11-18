@@ -2206,3 +2206,41 @@ h4.trophy-game__label {
   align-items: center;
   gap: var(--space-1);
 }
+
+/* The badges row in profile.exe: the ladder in small, then the current badge. */
+.profile-badges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-badges:hover {
+  background: var(--sand);
+}
+
+.profile-badges__row {
+  display: flex;
+  gap: 4px;
+}
+
+.profile-badges__words {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.profile-badges__name {
+  font: 600 var(--text-sm) var(--font-ui);
+}
+
+.profile-badges__time {
+  font-size: var(--text-xs);
+}

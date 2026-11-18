@@ -1,0 +1,17 @@
+{#
+  The badges row in profile.exe: the whole ladder in small, earned ones in
+  colour, plus the current badge and the running time. Clicking it opens
+  badges.exe. static/js/badges.js swaps in a fresh copy when a new badge is
+  earned. `badge` comes from app.badge_state().
+#}
+{% from "partials/badge_art.html" import badge_art %}
+<button class="profile-badges" type="button" data-open-badges data-badge-profile
+        aria-label="Badges: {{ badge.current.name if badge.current else 'none yet' }}. Open badges.exe">
+  <span class="profile-badges__row" aria-hidden="true">
+    {% for step in badge.ladder %}{{ badge_art(step.key, 30, locked=not step.earned) }}{% endfor %}
+  </span>
+  <span class="profile-badges__words">
+    <span class="profile-badges__name">{{ badge.current.name if badge.current else "No badge yet" }}</span>
+    <span class="profile-badges__time">{{ badge.minutes | hours }} running</span>
+  </span>
+</button>

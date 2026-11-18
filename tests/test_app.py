@@ -631,5 +631,15 @@ def test_a_new_badge_is_announced_once(client):
     badges.add_running(config.BADGES[0][2] * HOUR)
     news = client.get("/badges/new").get_json()
     assert news["key"] == "dialup" and "Dial-up" in news["popup"] and "data-badge-chip" in news["chip"]
+    assert "data-badge-profile" in news["profile"]
     assert client.post("/badges/seen", data={"key": "dialup"}).status_code == 204
     assert client.get("/badges/new").status_code == 204
+
+
+def test_profile_exe_shows_the_badges(client):
+    badges.add_running(config.BADGES[2][2] * HOUR)  # three earned
+    page = client.get(DEMO_PAGE).text
+    row = page.split("data-badge-profile")[1].split("</button>")[0]
+    assert row.count("badge-art--") == len(config.BADGES)
+    assert row.count("is-locked") == len(config.BADGES) - 3
+    assert "CD-ROM" in row

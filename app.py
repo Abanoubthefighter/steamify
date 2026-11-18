@@ -110,7 +110,7 @@ def template_globals() -> dict:
         "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
         "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
         "settings_state": settings_state,  # a function, for the same reason as wallpaper
-        "badge_state": badge_state,        # the same: only the taskbar chip in base.html asks
+        "badge_state": badge_state,        # the same: only the taskbar chip and profile.exe ask
         "background_sync_minutes": config.BACKGROUND_SYNC_MINUTES,
         # desktop.py sets this. In a browser tab there's no tray, so settings.exe says so.
         "desktop_app": app.config.get("DESKTOP_APP", False),
@@ -502,6 +502,7 @@ def new_badge():
         key=state["current"]["key"],
         popup=render_template("partials/badge_earned.html", badge=state),
         chip=render_template("partials/badge_chip.html", badge=state),
+        profile=render_template("partials/badge_profile.html", badge=state),
     )
 
 

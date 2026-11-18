@@ -1,4 +1,4 @@
-{# profile.exe: who this is, plus the three headline numbers. #}
+{# profile.exe: who this is, the three headline numbers, and the badges for running the app. #}
 {% from "partials/window.html" import window %}
 {% from "partials/avatar.html" import avatar %}
 {% from "partials/stat_tile.html" import stat_tile %}
@@ -23,6 +23,8 @@
     {{ stat_tile(summary.game_count, "games") }}
     {{ stat_tile(summary.played_percent ~ "%", "opened") }}
   </div>
+
+  {% with badge = badge_state() %}{% include "partials/badge_profile.html" %}{% endwith %}
 
   {% if player.profile_url %}
   <a class="btn" href="{{ player.profile_url }}" target="_blank" rel="noopener">View on Steam</a>
