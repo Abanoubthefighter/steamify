@@ -23,6 +23,11 @@ except ImportError:
 ICON_FILE = config.APP_DIR / "static" / "img" / "icon.ico"
 
 
+def available() -> bool:
+    """True if there can be a tray icon. Without one, a hidden window could never come back."""
+    return pystray is not None
+
+
 class Tray:
     """Ties the tray icon to the pywebview window.
 

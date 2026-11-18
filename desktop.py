@@ -50,6 +50,8 @@ import webbrowser  # noqa: E402
 from werkzeug.serving import make_server  # noqa: E402
 
 import config  # noqa: E402
+import startup  # noqa: E402
+import tray as tray_icon  # noqa: E402
 from app import app, prepare  # noqa: E402
 from background import BackgroundSync  # noqa: E402
 from tray import Tray  # noqa: E402
@@ -199,13 +201,22 @@ def window_size() -> tuple[int, int]:
     )
 
 
-def create_window(url: str, bridge: Bridge):
-    """A native window pointed at the local server."""
+def starts_hidden(arguments: list[str]) -> bool:
+    """True when Windows started the app at login (startup.py adds --tray): open straight into the tray.
+
+    Only if there's a tray icon to open it from, or the window would be lost.
+    """
+    return startup.TRAY_FLAG in arguments[1:] and tray_icon.available()
+
+
+def create_window(url: str, bridge: Bridge, hidden: bool = False):
+    """A native window pointed at the local server. `hidden` starts it in the tray."""
     width, height = window_size()
     return webview.create_window(
         config.WINDOW_TITLE,
         url,
         js_api=bridge,
+        hidden=hidden,
         width=width,
         height=height,
         min_size=config.WINDOW_MIN_SIZE,
@@ -236,7 +247,7 @@ def main() -> None:
     syncing = BackgroundSync()
     syncing.start()  # every saved player, about once an hour, while the app is open
     tray = Tray(sync_now=syncing.sync_now)
-    tray.attach(create_window(url, Bridge(tray)))
+    tray.attach(create_window(url, Bridge(tray), hidden=starts_hidden(sys.argv)))
     listen_for_second_copies(tray.show_window)  # a second double-click brings this window back
     try:
         webview.start(debug=config.DEBUG)  # blocks until the window is really closed, not just hidden

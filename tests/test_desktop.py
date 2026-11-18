@@ -31,3 +31,11 @@ def test_a_second_copy_can_ask_the_first_to_show_itself():
     desktop.listen_for_second_copies(asked.set, name)
     assert desktop.ask_open_copy_to_show(name) is True
     assert asked.wait(timeout=5)
+
+
+def test_the_tray_flag_starts_the_window_hidden_only_with_a_tray_icon(monkeypatch):
+    assert desktop.starts_hidden(["SteamStatsTracker.exe"]) is False
+    monkeypatch.setattr(desktop.tray_icon, "available", lambda: True)
+    assert desktop.starts_hidden(["SteamStatsTracker.exe", "--tray"]) is True
+    monkeypatch.setattr(desktop.tray_icon, "available", lambda: False)
+    assert desktop.starts_hidden(["SteamStatsTracker.exe", "--tray"]) is False  # no icon to bring it back from
