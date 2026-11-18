@@ -32,6 +32,7 @@ import config
 import demo
 import formatting
 import preferences
+import startup
 import stats
 import storage
 import sync
@@ -107,10 +108,19 @@ def template_globals() -> dict:
         "wallpaper_patterns": config.WALLPAPER_PATTERNS,
         "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
         "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
-        "preferences": preferences.current,  # a function, for the same reason as wallpaper
+        "settings_state": settings_state,  # a function, for the same reason as wallpaper
         "background_sync_minutes": config.BACKGROUND_SYNC_MINUTES,
         # desktop.py sets this. In a browser tab there's no tray, so settings.exe says so.
         "desktop_app": app.config.get("DESKTOP_APP", False),
+    }
+
+
+def settings_state() -> dict:
+    """Everything settings.exe shows: the saved settings, plus Start with Windows from the registry."""
+    return {
+        **preferences.current(),
+        "start_with_windows": startup.is_on(),
+        "startup_available": startup.available(),
     }
 
 
@@ -462,12 +472,24 @@ def save_key():
 def change_settings():
     """settings.exe: turn a setting on ("1") or off ("0"). Replies with every setting."""
     changes = {}
-    for key in preferences.defaults():
+    for key in (*preferences.defaults(), "start_with_windows"):
         if key in request.form:
             if request.form[key] not in ("0", "1"):
                 return jsonify(title="Can't save that", message="That setting only takes on or off."), 400
             changes[key] = request.form[key] == "1"
-    return jsonify(preferences.update(**changes))
+
+    # Start with Windows lives in the registry (startup.py), the rest in the database.
+    start_with_windows = changes.pop("start_with_windows", None)
+    try:
+        if start_with_windows is True:
+            startup.turn_on()
+        elif start_with_windows is False:
+            startup.turn_off()
+    except startup.StartupError as error:
+        return jsonify(title=error.title, message=str(error)), 400
+    if changes:
+        preferences.update(**changes)
+    return jsonify(settings_state())
 
 
 @app.post("/wallpaper")

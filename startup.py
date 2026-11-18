@@ -22,6 +22,9 @@ except ImportError:  # not Windows
     winreg = None
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+# Where Task Manager's Startup tab (and Settings > Apps > Startup) remembers
+# programs that were switched off there. The Run value stays, but Windows skips it.
+APPROVED_KEY = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"
 VALUE_NAME = config.APP_ID  # the installer's uninstall step removes this same name
 TRAY_FLAG = "--tray"        # desktop.py starts hidden in the tray when it sees this
 
@@ -52,7 +55,18 @@ def is_on() -> bool:
     except OSError:  # no Run key, or no value for us in it
         return False
     # A value left by a copy installed somewhere else doesn't count: it wouldn't start this one.
-    return value == command()
+    return value == command() and not _switched_off_in_windows()
+
+
+def _switched_off_in_windows() -> bool:
+    """True if the app was switched off in Task Manager's Startup tab."""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, APPROVED_KEY) as key:
+            data, _ = winreg.QueryValueEx(key, VALUE_NAME)
+    except OSError:
+        return False
+    # The first byte is even (2) for "on" and odd (3) for "switched off".
+    return bool(data) and data[0] % 2 == 1
 
 
 def turn_on() -> None:
@@ -63,6 +77,12 @@ def turn_on() -> None:
             winreg.SetValueEx(key, VALUE_NAME, 0, winreg.REG_SZ, command())
     except OSError as error:
         raise StartupError("Windows wouldn't let the app add itself to the programs it starts.") from error
+    # If it was switched off in Task Manager before, forget that, or Windows would still skip it.
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, APPROVED_KEY, 0, winreg.KEY_SET_VALUE) as key:
+            winreg.DeleteValue(key, VALUE_NAME)
+    except OSError:
+        pass  # never switched off there
 
 
 def turn_off() -> None:

@@ -4,7 +4,7 @@
 
 import { addMenuAction, openTemplatePopup, showMessage } from "./desktop.js";
 
-let saved = null; // the settings as the server last confirmed them: { keep_running: true }
+let saved = null; // the settings as the server last confirmed them: { keep_running: true, start_with_windows: false, ... }
 let dialog = null; // the open settings.exe window, if there is one
 
 export function initSettings() {

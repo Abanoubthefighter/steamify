@@ -1,9 +1,11 @@
 {#
   settings.exe: a floating window, opened from the start menu (System >
   Settings). The settings themselves live in preferences.py (the background
-  sync itself in background.py); static/js/settings.js
-  ticks the boxes from the data below and saves each change straight away.
+  sync itself in background.py), and Start with Windows in the registry
+  (startup.py). static/js/settings.js ticks the boxes from the data below
+  and saves each change straight away.
 #}
+{% set settings = settings_state() %}
 <template data-popup="settings" data-title="settings.exe">
   <form class="settings-form" data-settings-form>
     <fieldset class="checks">
@@ -18,6 +20,16 @@
       <p class="note">Every saved player, in the window or in the tray, so the playtime history fills in
         on its own. Needs a Steam API key. The tray icon's Sync now does it straight away.</p>
     </fieldset>
+    <fieldset class="checks">
+      <legend class="label">When you log in to Windows</legend>
+      <label><input type="checkbox" name="start_with_windows"{{ ' disabled' if not settings.startup_available }}>
+        Start with Windows, in the tray</label>
+      {% if settings.startup_available %}
+      <p class="note">The app starts hidden next to the clock and syncs in the background. Click its icon to open it.</p>
+      {% else %}
+      <p class="note">Only the installed app can do this. Run from source there's no single program for Windows to start.</p>
+      {% endif %}
+    </fieldset>
     {% if not desktop_app %}
     <p class="note note--warning">These only do something in the desktop app, not in a browser tab.</p>
     {% endif %}
@@ -26,4 +38,4 @@
     </div>
   </form>
 </template>
-<script type="application/json" id="settings-data">{{ preferences() | tojson }}</script>
+<script type="application/json" id="settings-data">{{ settings | tojson }}</script>

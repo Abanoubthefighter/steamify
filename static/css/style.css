@@ -1205,6 +1205,13 @@ li:last-child > .row {
   box-shadow: inset 0 0 0 3px var(--sand);
 }
 
+/* A box this copy can't offer (Start with Windows when run from source). The note under it says why. */
+.checks input:disabled,
+.checks label:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .settings-form {
   display: flex;
   flex-direction: column;

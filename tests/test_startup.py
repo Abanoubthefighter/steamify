@@ -51,3 +51,14 @@ def test_other_programs_in_the_run_list_are_left_alone(installed):
     run_list()["SomethingElse"] = "else.exe"
     startup.turn_off()
     assert run_list() == {"SomethingElse": "else.exe"}
+
+
+def test_switched_off_in_task_manager_counts_as_off_until_turned_on_here(installed):
+    startup.turn_on()
+    registry = startup.winreg
+    with registry.CreateKey(registry.HKEY_CURRENT_USER, startup.APPROVED_KEY) as key:
+        registry.SetValueEx(key, "SteamStatsTracker", 0, 3, bytes([3]) + bytes(11))  # what Task Manager writes
+    assert not startup.is_on()
+    startup.turn_on()
+    assert startup.is_on()
+    assert registry.keys[(registry.HKEY_CURRENT_USER, startup.APPROVED_KEY)] == {}

@@ -2,6 +2,7 @@
 
 import io
 import json
+import sys
 from datetime import date
 
 import pytest
@@ -11,6 +12,7 @@ import app as app_module
 import background
 import config
 import demo
+import startup
 import storage
 import sync
 from conftest import FAKE_KEY, PNG, WEBP, make_achievements, make_game, make_profile
@@ -585,3 +587,18 @@ def test_sync_exe_says_what_the_last_background_round_did(client, steam):
 def test_settings_exe_offers_the_background_sync(client):
     page = client.get(DEMO_PAGE).text
     assert 'name="background_sync"' in page and "Sync every hour" in page
+
+
+def test_start_with_windows_needs_the_installed_app(client):
+    assert 'name="start_with_windows" disabled' in client.get(DEMO_PAGE).text
+    reply = client.post("/settings", data={"start_with_windows": "1"})
+    assert reply.status_code == 400 and "installed app" in reply.get_json()["message"]
+
+
+def test_start_with_windows_can_be_switched_on_and_off(client, monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)  # pretend to be the installed .exe
+    assert 'name="start_with_windows" disabled' not in client.get(DEMO_PAGE).text
+    assert client.post("/settings", data={"start_with_windows": "1"}).get_json()["start_with_windows"] is True
+    assert startup.is_on()
+    assert client.post("/settings", data={"start_with_windows": "0"}).get_json()["start_with_windows"] is False
+    assert not startup.is_on()
