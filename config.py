@@ -132,6 +132,20 @@ BACKGROUND_SYNC_DEFAULT = True  # sync every saved player now and then while the
 BACKGROUND_SYNC_MINUTES = 60    # how often each player is synced (in the window or in the tray)
 BACKGROUND_CHECK_MINUTES = 5    # how often the app looks whether someone is due
 
+# --- Badges (badges.exe) -----------------------------------------------------------
+
+# Earned by keeping the app running (in the window or the tray), smallest first:
+# (key, name, hours of running). Each key has its drawing in partials/badge_art.html
+# and its colours in theme.css (--badge-*).
+BADGES = [
+    ("dialup", "Dial-up", 6),
+    ("floppy", "Floppy", 12),
+    ("cdrom", "CD-ROM", 25),
+    ("dvd", "DVD", 50),
+    ("harddrive", "Hard drive", 75),
+]
+RUNNING_TICK_SECONDS = 60   # how often running time is added up; also the most one tick can add (so sleep doesn't count)
+
 # --- Desktop window ----------------------------------------------------------
 
 WINDOW_TITLE = APP_NAME
