@@ -61,6 +61,20 @@
   --green: #5bd17a;      /* the "online" dot */
   --red-ink: #bf3510;    /* --red, deepened so small text stays readable on paper */
 
+  /* --- Badges (badges.exe) --------------------------------------------------
+     Each badge's own colour, then the colours its details share.            */
+  --badge-dialup: var(--sand);
+  --badge-floppy: var(--lilac);
+  --badge-cdrom: var(--cream);
+  --badge-dvd: var(--red);
+  --badge-harddrive: var(--night);  /* the last one is the dark one */
+  --badge-light: var(--cream);    /* labels, the shutter, the clear ring */
+  --badge-accent: var(--lilac);   /* the handset, a disc's shine, the drive's read arm */
+  --badge-dvd-shine: var(--sand); /* lilac on red would be hard to see */
+  --badge-hot: var(--red);        /* a modem light */
+  --badge-ok: var(--green);       /* the "on" lights */
+  --badge-line: 3px;              /* outline thickness inside a badge (in a 64-unit drawing) */
+
   /* --- Wallpaper ------------------------------------------------------------
      The built-in patterns are drawn over --bg. Keep their colours close to
      --bg so the pattern stays in the background and the windows stay the

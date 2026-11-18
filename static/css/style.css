@@ -2054,3 +2054,48 @@ h4.trophy-game__label {
     transition: none !important;
   }
 }
+
+/* --- Badges (badges.exe, the taskbar chip) -------------------------------- */
+/* The drawings are in partials/badge_art.html, their colours in theme.css. */
+
+.badge-art {
+  flex: none;
+  overflow: visible;
+}
+
+.badge-art--dialup { --badge-main: var(--badge-dialup); }
+.badge-art--floppy { --badge-main: var(--badge-floppy); }
+.badge-art--cdrom { --badge-main: var(--badge-cdrom); }
+.badge-art--dvd { --badge-main: var(--badge-dvd); --badge-accent: var(--badge-dvd-shine); }
+.badge-art--harddrive { --badge-main: var(--badge-harddrive); }
+
+.badge-art .b-line {
+  stroke: var(--ink);
+  stroke-width: var(--badge-line);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.badge-art .b-main { fill: var(--badge-main); }
+.badge-art .b-light { fill: var(--badge-light); }
+.badge-art .b-accent { fill: var(--badge-accent); }
+.badge-art .b-hot { fill: var(--badge-hot); }
+.badge-art .b-ok { fill: var(--badge-ok); }
+.badge-art .b-ink { fill: var(--ink); }
+.badge-art .b-paper { fill: var(--paper); }
+
+.badge-art .b-arm {
+  stroke: var(--badge-accent);
+  stroke-width: calc(var(--badge-line) * 2);
+}
+
+.badge-art .b-label {
+  fill: var(--badge-light);
+  font: 700 10px var(--font-ui);
+}
+
+/* Not earned yet: grey and faded. badges.exe says "locked" in words too. */
+.badge-art.is-locked {
+  filter: grayscale(1);
+  opacity: 0.4;
+}

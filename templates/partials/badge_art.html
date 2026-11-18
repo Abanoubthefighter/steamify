@@ -1,0 +1,60 @@
+{#
+  The five badge drawings, one inline SVG each, so they stay sharp at any
+  size and take their colours from theme.css (--badge-*). The keys match
+  config.BADGES. Outlines and fills come from classes in style.css:
+  b-line (ink outline), b-main (the badge's own colour), b-light, b-accent,
+  b-hot, b-ok, b-ink.
+
+      {{ badge_art("floppy") }}               48 px
+      {{ badge_art("cdrom", 24) }}            any size
+      {{ badge_art("dvd", locked=true) }}     greyed out: not earned yet
+#}
+{% macro badge_art(key, size=48, locked=false) %}
+<svg class="badge-art badge-art--{{ key }}{{ ' is-locked' if locked }}" viewBox="0 0 64 64"
+     width="{{ size }}" height="{{ size }}" aria-hidden="true" focusable="false">
+  {% if key == "dialup" %}
+  {# A 90s modem with the phone handset resting on top. #}
+  <path class="b-line b-accent" d="M8 30 v-8 q24 -16 48 0 v8 h-12 v-5 q-12 -6 -24 0 v5 z"/>
+  <rect class="b-line b-main" x="6" y="30" width="52" height="24" rx="4"/>
+  <circle class="b-line b-hot" cx="18" cy="42" r="3.5"/>
+  <circle class="b-line b-ok" cx="29" cy="42" r="3.5"/>
+  <circle class="b-line b-light" cx="40" cy="42" r="3.5"/>
+  <path class="b-line" d="M47 39 h5 M47 45 h5" fill="none"/>
+  {% elif key == "floppy" %}
+  {# A 3.5" floppy disk: metal shutter at the top, label at the bottom, one clipped corner. #}
+  <path class="b-line b-main" d="M10 7 h38 l9 9 v39 a2 2 0 0 1 -2 2 h-45 a2 2 0 0 1 -2 -2 v-46 a2 2 0 0 1 2 -2 z"/>
+  <rect class="b-line b-light" x="19" y="7" width="24" height="16"/>
+  <rect class="b-ink" x="35" y="10" width="5" height="10"/>
+  <rect class="b-line b-light" x="15" y="33" width="34" height="22"/>
+  <path class="b-line" d="M20 40 h24 M20 47 h16" fill="none"/>
+  {% elif key == "cdrom" %}
+  {# A CD: a flat shine slice, the clear ring round the middle and the hole. #}
+  <circle class="b-main" cx="32" cy="32" r="26"/>
+  <path class="b-accent" d="M32 32 L32 6 A26 26 0 0 1 54.5 19 Z"/>
+  <path class="b-accent" d="M32 32 L32 58 A26 26 0 0 1 9.5 45 Z"/>
+  <circle class="b-line" cx="32" cy="32" r="26" fill="none"/>
+  <circle class="b-line b-light" cx="32" cy="32" r="10"/>
+  <circle class="b-line b-paper" cx="32" cy="32" r="4"/>
+  {% elif key == "dvd" %}
+  {# A DVD: like the CD, in red, with its name on it. #}
+  <circle class="b-main" cx="32" cy="32" r="26"/>
+  <path class="b-accent" d="M32 32 L32 6 A26 26 0 0 1 54.5 19 Z"/>
+  <circle class="b-line" cx="32" cy="32" r="26" fill="none"/>
+  <circle class="b-line b-light" cx="32" cy="32" r="10"/>
+  <circle class="b-line b-paper" cx="32" cy="32" r="4"/>
+  <text class="b-label" x="32" y="52" text-anchor="middle">DVD</text>
+  {% elif key == "harddrive" %}
+  {# An opened hard drive: the platter, the read arm, a light and four screws. #}
+  <rect class="b-line b-main" x="8" y="6" width="48" height="52" rx="4"/>
+  <circle class="b-line b-light" cx="30" cy="27" r="15"/>
+  <circle class="b-ink" cx="30" cy="27" r="3"/>
+  <path class="b-line b-arm" d="M48 50 L36 33" fill="none"/>
+  <circle class="b-line b-accent" cx="48" cy="50" r="4"/>
+  <circle class="b-line b-ok" cx="16" cy="50" r="2.5"/>
+  <circle class="b-light" cx="12" cy="10" r="1.5"/>
+  <circle class="b-light" cx="52" cy="10" r="1.5"/>
+  <circle class="b-light" cx="12" cy="54" r="1.5"/>
+  <circle class="b-light" cx="52" cy="54" r="1.5"/>
+  {% endif %}
+</svg>
+{% endmacro %}
