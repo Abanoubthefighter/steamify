@@ -70,15 +70,24 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-// The play history and the API key live in %LOCALAPPDATA%\SteamStatsTracker,
-// outside the program folder, so updates keep them. When the app is removed,
-// ask whether they should go too. Default answer: keep them.
+const
+  // Where "Start with Windows" (settings.exe, startup.py) puts the app, and
+  // where Task Manager notes it was switched off there.
+  RunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
+  StartupApprovedKey = 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run';
+
+// When the app is removed: take it off the programs Windows starts at login
+// (always, even in a silent uninstall), then ask about the saved data. The
+// play history and the API key live in %LOCALAPPDATA%\SteamStatsTracker,
+// outside the program folder, so updates keep them. Default answer: keep them.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;
 begin
   if CurUninstallStep <> usPostUninstall then
     Exit;
+  RegDeleteValue(HKEY_CURRENT_USER, RunKey, '{#AppKey}');
+  RegDeleteValue(HKEY_CURRENT_USER, StartupApprovedKey, '{#AppKey}');
   DataDir := ExpandConstant('{localappdata}\{#AppKey}');
   if not DirExists(DataDir) or UninstallSilent() then
     Exit;
