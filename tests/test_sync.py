@@ -1,5 +1,7 @@
 """The scan pipeline, with the Steam calls swapped for fakes."""
 
+import threading
+
 import pytest
 
 import api
@@ -233,3 +235,20 @@ def test_icons_are_only_fetched_for_what_achievements_exe_shows(achievements, mo
     icons_asked.clear()
     list(sync.scan("tester", force=True))
     assert icons_asked == []  # every shown unlock has its icon now
+
+
+def test_a_second_scan_waits_for_the_first(steam):
+    first = sync.scan("tester")
+    assert next(first) == {"label": sync.STEPS[0]}
+    next(first)  # holds the lock now, halfway through
+    second = sync.scan("tester", force=True)
+    assert next(second) == {"label": sync.STEPS[0]}
+    finished = []
+    waiting = threading.Thread(target=lambda: finished.append(list(second)))
+    waiting.start()
+    waiting.join(timeout=0.5)
+    assert waiting.is_alive()  # stuck behind the first scan
+    first.close()  # the page went away: the lock must be let go
+    waiting.join(timeout=5)
+    assert finished and finished[0][0] == {"detail": "waiting for the scan that's already running"}
+    assert finished[0][-1]["steam_id"] == ME

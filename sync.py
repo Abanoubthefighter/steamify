@@ -1,5 +1,6 @@
 """A scan: ask Steam about one player and save what comes back."""
 
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -22,6 +23,10 @@ STEPS = (
 # isn't marked as checked, so the next scan tries it again.
 SKIPPABLE = (api.SteamTimeout, api.NoConnection, api.SteamDown)
 
+# One scan at a time. Sync now on the page and the hourly background sync
+# (background.py) could otherwise save the same player at the same moment.
+_one_at_a_time = threading.Lock()
+
 
 def is_fresh(player: dict | None) -> bool:
     """True if this player was scanned recently enough that we can leave Steam alone."""
@@ -38,9 +43,21 @@ def scan(query: str, force: bool = False):
     it yields is the result: {"steam_id": ..., "gained": minutes}.
 
     `query` is whatever the user typed. `force` skips the "scanned recently"
-    shortcut. Raises api.SteamError if Steam can't or won't answer.
+    shortcut. Raises api.SteamError if Steam can't or won't answer. If
+    another scan is already running, this one waits for it first.
     """
     yield {"label": STEPS[0]}
+    if not _one_at_a_time.acquire(blocking=False):
+        yield {"detail": "waiting for the scan that's already running"}
+        _one_at_a_time.acquire()
+    try:
+        yield from _scan(query, force)
+    finally:
+        _one_at_a_time.release()  # also when the page goes away halfway and the scan is dropped
+
+
+def _scan(query: str, force: bool):
+    """The steps of scan() after the first label, while it holds the one-at-a-time lock."""
     steam_id = api.resolve_steam_id(query)
     if not force and is_fresh(storage.get_player(steam_id)):
         yield {"steam_id": steam_id, "gained": 0}
