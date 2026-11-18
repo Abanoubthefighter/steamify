@@ -98,17 +98,56 @@ def test_pictures_over_the_limit_are_refused(monkeypatch):
     assert refused.value.title == "That picture is too big"
 
 
-def test_a_new_picture_replaces_the_old_copy():
+def test_every_import_is_kept_newest_first():
     first = wallpaper.import_picture(PNG)["picture"]
     second = wallpaper.import_picture(JPG)["picture"]
-    assert first != second
-    assert [path.name for path in config.WALLPAPER_DIR.iterdir()] == [second]
+    third = wallpaper.import_picture(WEBP)["picture"]
+    assert wallpaper.pictures() == [third, second, first]
+    assert wallpaper.current()["picture"] == third  # the newest one goes on the desktop
 
 
-def test_importing_the_same_picture_twice_keeps_it():
+def test_importing_the_same_picture_twice_doesnt_make_a_duplicate():
     name = wallpaper.import_picture(PNG)["picture"]
+    wallpaper.import_picture(JPG)
     assert wallpaper.import_picture(PNG)["picture"] == name
-    assert (config.WALLPAPER_DIR / name).is_file()
+    assert len(wallpaper.pictures()) == 2 and wallpaper.pictures()[0] == name  # back to the top
+
+
+def test_any_imported_picture_can_be_picked_again():
+    older = wallpaper.import_picture(PNG)["picture"]
+    wallpaper.import_picture(JPG)
+    assert wallpaper.choose(wallpaper.PICTURE, older)["picture"] == older
+    assert wallpaper.current() == {"pattern": "picture", "dim": config.DEFAULT_WALLPAPER_DIM, "picture": older}
+
+
+def test_a_picture_that_isnt_in_the_list_cant_be_picked():
+    wallpaper.import_picture(PNG)
+    with pytest.raises(wallpaper.WallpaperError):
+        wallpaper.choose(wallpaper.PICTURE, "wallpaper-000000000000.png")
+
+
+def test_deleting_a_picture_in_the_list_leaves_the_desktop_alone():
+    older = wallpaper.import_picture(PNG)["picture"]
+    newer = wallpaper.import_picture(JPG)["picture"]
+    choice = wallpaper.delete_picture(older)
+    assert wallpaper.pictures() == [newer]
+    assert choice == {"pattern": "picture", "dim": config.DEFAULT_WALLPAPER_DIM, "picture": newer}
+
+
+def test_deleting_the_picture_on_the_desktop_brings_back_the_default():
+    name = wallpaper.import_picture(PNG)["picture"]
+    choice = wallpaper.delete_picture(name)
+    assert choice["pattern"] == config.DEFAULT_WALLPAPER and choice["picture"] is None
+    assert wallpaper.current() == choice and wallpaper.pictures() == []
+
+
+def test_deleting_something_thats_not_a_picture_is_refused():
+    config.WALLPAPER_DIR.mkdir(parents=True)
+    (config.WALLPAPER_DIR / "notes.txt").write_text("not ours")
+    for name in ("notes.txt", "wallpaper-000000000000.png", "../test.db"):
+        with pytest.raises(wallpaper.WallpaperError):
+            wallpaper.delete_picture(name)
+    assert (config.WALLPAPER_DIR / "notes.txt").exists()
 
 
 def test_switching_to_a_pattern_keeps_the_picture_for_later():
@@ -118,10 +157,11 @@ def test_switching_to_a_pattern_keeps_the_picture_for_later():
     assert wallpaper.choose(wallpaper.PICTURE)["pattern"] == wallpaper.PICTURE
 
 
-def test_reset_deletes_the_copy_and_any_leftovers():
-    wallpaper.import_picture(PNG)
+def test_reset_keeps_the_pictures_but_clears_half_written_leftovers():
+    name = wallpaper.import_picture(PNG)["picture"]
     (config.WALLPAPER_DIR / "wallpaper-halfway.jpg.part").write_bytes(b"...")
     (config.WALLPAPER_DIR / "notes.txt").write_text("not ours, so left alone")
-    wallpaper.reset()
-    assert [path.name for path in config.WALLPAPER_DIR.iterdir()] == ["notes.txt"]
-    assert wallpaper.current()["picture"] is None
+    choice = wallpaper.reset()
+    assert sorted(path.name for path in config.WALLPAPER_DIR.iterdir()) == sorted([name, "notes.txt"])
+    assert choice["pattern"] == config.DEFAULT_WALLPAPER and choice["picture"] is None
+    assert wallpaper.pictures() == [name]

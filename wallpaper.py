@@ -1,9 +1,11 @@
-"""The desktop wallpaper: a built-in pattern, or a picture the user imported.
+"""The desktop wallpaper: a built-in pattern, or one of the user's pictures.
 
 The choice is one small JSON value in the settings table, so it survives a
-restart. An imported picture is copied into config.WALLPAPER_DIR, inside the
-app's data folder. The installed app can always write there, and the copy
-keeps working if the original file is moved or deleted.
+restart. Every imported picture is copied into config.WALLPAPER_DIR, inside
+the app's data folder. The installed app can always write there, and a copy
+keeps working if the original file is moved or deleted. The copies stay
+until the user deletes them in wallpaper.exe, so the folder itself is the
+list of pictures; nothing else needs to keep track of them.
 """
 
 import hashlib
@@ -15,7 +17,7 @@ import config
 import storage
 
 SETTING = "wallpaper"
-PICTURE = "picture"     # the "pattern" that means: show the imported picture
+PICTURE = "picture"     # the "pattern" that means: show one of the imported pictures
 FILE_PREFIX = "wallpaper-"
 
 # How each accepted format starts. Checking the bytes, not the file name,
@@ -45,9 +47,10 @@ class WallpaperError(Exception):
 def current() -> dict:
     """What the wallpaper is now: {"pattern", "dim", "picture"}.
 
-    "picture" is the file name of the imported copy, or None. Anything odd in
-    the saved value (an unknown pattern, a copy that went missing) quietly
-    falls back to the defaults instead of breaking the page.
+    "picture" is the file name of the picture last picked, or None. It's
+    kept while a built-in pattern is on, so switching back is one click.
+    Anything odd in the saved value (an unknown pattern, a picture that was
+    deleted) quietly falls back to the defaults instead of breaking the page.
     """
     saved = _load()
     picture = saved.get("picture")
@@ -59,6 +62,15 @@ def current() -> dict:
         pattern = config.DEFAULT_WALLPAPER
 
     return {"pattern": pattern, "dim": clamp_dim(saved.get("dim")), "picture": picture}
+
+
+def pictures() -> list[str]:
+    """The file names of every imported picture, newest first."""
+    if not config.WALLPAPER_DIR.is_dir():
+        return []
+    found = [path for path in config.WALLPAPER_DIR.iterdir() if path.is_file() and _is_our_file(path.name)]
+    found.sort(key=lambda path: (path.stat().st_mtime, path.name), reverse=True)
+    return [path.name for path in found]
 
 
 def clamp_dim(value) -> int:
@@ -92,12 +104,20 @@ def _is_our_file(name: str) -> bool:
 # --- Changing -----------------------------------------------------------------
 
 
-def choose(pattern: str) -> dict:
-    """Switch to a built-in pattern, or back to the imported picture."""
+def choose(pattern: str, picture: str | None = None) -> dict:
+    """Switch to a built-in pattern, or to one of the imported pictures.
+
+    For a picture, `picture` names which one; left out, it's the last one picked.
+    """
     choice = current()
-    if pattern == PICTURE and choice["picture"] is None:
-        raise WallpaperError("No picture yet", "Import a picture first, then you can pick it here.")
-    if pattern != PICTURE and pattern not in config.WALLPAPER_PATTERNS:
+    if pattern == PICTURE:
+        picture = picture or choice["picture"]
+        if picture not in pictures():
+            if not pictures():
+                raise WallpaperError("No picture yet", "Import a picture first, then you can pick it here.")
+            raise WallpaperError("That picture is gone", "It isn't in the app any more. Pick another one.")
+        return _save({**choice, "pattern": PICTURE, "picture": picture})
+    if pattern not in config.WALLPAPER_PATTERNS:
         raise WallpaperError("Unknown wallpaper", "That pattern isn't one of the built-in ones.")
     return _save({**choice, "pattern": pattern})
 
@@ -108,11 +128,12 @@ def set_dim(percent) -> dict:
 
 
 def import_picture(data: bytes) -> dict:
-    """Copy a picture into the app's data folder and make it the wallpaper.
+    """Copy a picture into the app's data folder, add it to the list and show it.
 
     The copy is named after a short fingerprint of its contents, so a new
     picture always gets a new name. That way the window never shows an old
-    copy from its cache, and importing the same picture twice is harmless.
+    copy from its cache, and importing the same picture twice doesn't make
+    a duplicate (it just moves back to the top of the list).
     """
     if len(data) > config.WALLPAPER_MAX_MB * 1024 * 1024:
         raise WallpaperError("That picture is too big", f"Pick one under {config.WALLPAPER_MAX_MB} MB.")
@@ -127,9 +148,8 @@ def import_picture(data: bytes) -> dict:
     temporary.write_bytes(data)
     os.replace(temporary, folder / name)
 
-    choice = _save({**current(), "pattern": PICTURE, "picture": name})
-    _delete_pictures(keep=name)  # the previous picture, if there was one
-    return choice
+    _delete_leftovers()
+    return _save({**current(), "pattern": PICTURE, "picture": name})
 
 
 def _picture_extension(data: bytes) -> str:
@@ -139,17 +159,26 @@ def _picture_extension(data: bytes) -> str:
     raise WallpaperError("That's not a picture the app can use", "Pick a PNG, JPG or WebP image.")
 
 
+def delete_picture(name: str) -> dict:
+    """Delete one imported picture. If it was on the desktop, the default wallpaper comes back.
+
+    Only the app's own copy goes; the original file on the user's computer is never touched.
+    """
+    if name not in pictures():
+        raise WallpaperError("That picture is gone", "It was already deleted.")
+    (config.WALLPAPER_DIR / name).unlink(missing_ok=True)
+    return _save(current())  # current() notices the file is gone and falls back
+
+
 def reset() -> dict:
-    """Back to the default pattern and dim level, and delete the imported copy."""
-    _delete_pictures(keep=None)
+    """Back to the default wallpaper and dim level. The imported pictures stay in the list."""
+    _delete_leftovers()
     storage.set_setting(SETTING, None)
     return current()
 
 
-def _delete_pictures(keep: str | None) -> None:
-    """Remove every copy this module made except `keep`, plus any half-written leftovers."""
-    if not config.WALLPAPER_DIR.is_dir():
-        return
-    for path in config.WALLPAPER_DIR.glob(f"{FILE_PREFIX}*"):
-        if path.name != keep:
+def _delete_leftovers() -> None:
+    """Remove half-written copies, left behind if the app was closed in the middle of an import."""
+    if config.WALLPAPER_DIR.is_dir():
+        for path in config.WALLPAPER_DIR.glob(f"{FILE_PREFIX}*.part"):
             path.unlink(missing_ok=True)

@@ -225,7 +225,7 @@ def test_every_page_starts_with_the_default_wallpaper(client):
 def test_picking_a_pattern_changes_the_page(client):
     reply = client.post("/wallpaper", data={"pattern": "checker", "dim": "55"})
     assert reply.status_code == 200
-    assert reply.json == {"pattern": "checker", "dim": 55, "picture_url": None}
+    assert reply.json == {"pattern": "checker", "dim": 55, "picture": None, "picture_url": None, "pictures": []}
     page = client.get(DEMO_PAGE).text
     assert 'class="wallpaper pattern--checker"' in page
     assert "--wallpaper-dim: 0.55" in page
@@ -242,7 +242,7 @@ def test_reset_brings_back_the_default(client):
     assert client.post("/wallpaper/reset").json["pattern"] == config.DEFAULT_WALLPAPER
 
 
-def test_only_the_current_picture_is_served(client):
+def test_only_pictures_in_the_list_are_served(client):
     assert client.get("/wallpaper/picture/wallpaper-nope.png").status_code == 404
     assert client.get("/wallpaper/picture/..%2Ftest.db").status_code == 404
 
@@ -295,10 +295,35 @@ def test_a_huge_upload_is_stopped_before_it_is_read(client, monkeypatch):
     assert reply.status_code == 413 and reply.json["title"] == "That picture is too big"
 
 
-def test_the_old_picture_stops_being_served_after_reset(client):
-    url = upload(client, PNG).json["picture_url"]
-    client.post("/wallpaper/reset")
-    assert client.get(url).status_code == 404
+def test_every_picture_in_the_list_is_served_and_can_be_picked(client):
+    older = upload(client, PNG).json
+    newer = upload(client, WEBP, "photo.webp").json
+    assert [p["name"] for p in newer["pictures"]] == [newer["picture"], older["picture"]]
+    for picture in newer["pictures"]:
+        assert client.get(picture["url"]).status_code == 200
+
+    reply = client.post("/wallpaper", data={"pattern": "picture", "picture": older["picture"]})
+    assert reply.json["picture_url"] == older["picture_url"]
+    assert f'src="{older["picture_url"]}"' in client.get(DEMO_PAGE).text
+
+
+def test_a_deleted_picture_leaves_the_list_and_stops_being_served(client):
+    picture = upload(client, PNG).json
+    reply = client.post(f"/wallpaper/picture/{picture['picture']}/delete")
+    assert reply.status_code == 200
+    assert reply.json["pictures"] == [] and reply.json["pattern"] == config.DEFAULT_WALLPAPER
+    assert client.get(picture["picture_url"]).status_code == 404
+
+
+def test_deleting_a_picture_thats_already_gone_gets_a_popup_message(client):
+    reply = client.post("/wallpaper/picture/wallpaper-000000000000.png/delete")
+    assert reply.status_code == 404 and reply.json["title"]
+
+
+def test_reset_keeps_the_pictures(client):
+    upload(client, PNG)
+    reply = client.post("/wallpaper/reset").json
+    assert reply["pattern"] == config.DEFAULT_WALLPAPER and len(reply["pictures"]) == 1
 
 
 def test_the_hills_drawing_is_on_every_page_and_in_its_preview(client):

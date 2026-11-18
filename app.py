@@ -105,13 +105,21 @@ def template_globals() -> dict:
 
 
 def wallpaper_state(choice: dict | None = None) -> dict:
-    """The wallpaper as the page and wallpaper.exe need it: pattern, dim level and picture address."""
+    """The wallpaper as the page and wallpaper.exe need it.
+
+    The pattern, the dim level, which picture is picked (and its address),
+    and every imported picture for the list in wallpaper.exe.
+    """
     choice = choice or wallpaper.current()
     picture = choice["picture"]
     return {
         "pattern": choice["pattern"],
         "dim": choice["dim"],
+        "picture": picture,
         "picture_url": url_for("wallpaper_picture", name=picture) if picture else None,
+        "pictures": [
+            {"name": name, "url": url_for("wallpaper_picture", name=name)} for name in wallpaper.pictures()
+        ],
     }
 
 
@@ -303,10 +311,10 @@ def save_key():
 
 @app.post("/wallpaper")
 def change_wallpaper():
-    """Pick a pattern, a dim level, or both. Replies with the new wallpaper."""
+    """Pick a pattern (or which picture), a dim level, or both. Replies with the new wallpaper."""
     try:
         if "pattern" in request.form:
-            wallpaper.choose(request.form["pattern"])
+            wallpaper.choose(request.form["pattern"], request.form.get("picture"))
         if "dim" in request.form:
             wallpaper.set_dim(request.form["dim"])
     except wallpaper.WallpaperError as error:
@@ -316,7 +324,7 @@ def change_wallpaper():
 
 @app.post("/wallpaper/picture")
 def import_wallpaper():
-    """Copy a picture from the user's computer and make it the wallpaper."""
+    """Copy a picture from the user's computer, add it to the list and make it the wallpaper."""
     upload = request.files.get("picture")
     if upload is None:
         return jsonify(title="No picture", message="Pick a picture to import first."), 400
@@ -327,16 +335,26 @@ def import_wallpaper():
     return jsonify(wallpaper_state(choice))
 
 
+@app.post("/wallpaper/picture/<name>/delete")
+def delete_wallpaper_picture(name: str):
+    """Remove one imported picture from the app. The original file is never touched."""
+    try:
+        choice = wallpaper.delete_picture(name)
+    except wallpaper.WallpaperError as error:
+        return jsonify(error.as_dict()), 404
+    return jsonify(wallpaper_state(choice))
+
+
 @app.post("/wallpaper/reset")
 def reset_wallpaper():
-    """Back to the default pattern. The imported copy is deleted; the original never is."""
+    """Back to the default wallpaper. Imported pictures stay in the list."""
     return jsonify(wallpaper_state(wallpaper.reset()))
 
 
 @app.get("/wallpaper/picture/<name>")
 def wallpaper_picture(name: str):
-    """The imported picture. Only the current one is ever handed out."""
-    if name != wallpaper.current()["picture"]:
+    """One imported picture. Only names in the list are ever handed out, nothing else in the folder."""
+    if name not in wallpaper.pictures():
         abort(404)
     # Every import gets a new file name, so the browser may keep this one for good.
     return send_from_directory(config.WALLPAPER_DIR, name, max_age=31_536_000)
