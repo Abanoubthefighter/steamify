@@ -2099,3 +2099,90 @@ h4.trophy-game__label {
   filter: grayscale(1);
   opacity: 0.4;
 }
+
+/* The badge chip next to the clock. */
+.chip--badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sand);
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+
+.chip--badge:hover {
+  background: var(--lilac);
+}
+
+/* A floating window between a message box and a list window (badges.exe). */
+.popups > .popup--wide {
+  width: min(var(--popup-wide-width), 100%);
+}
+
+.badges {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.badges__now {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.badges__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.badges__next {
+  text-align: left;
+}
+
+.badge-ladder {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-2) 4px;
+  background: var(--paper);
+  border: var(--line-thin) solid var(--ink);
+}
+
+.badge-step.is-earned {
+  background: var(--cream);
+}
+
+/* The one you're working towards. */
+.badge-step.is-next {
+  border-style: dashed;
+}
+
+.badge-step__name {
+  font: 600 var(--text-sm) var(--font-ui);
+  white-space: nowrap;
+}
+
+.badge-step__hours {
+  font-size: var(--text-xs);
+}
+
+.badge-earned {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}

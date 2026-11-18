@@ -10,6 +10,7 @@ import { initWallpaper } from "./wallpaper.js";
 import { initPlayers } from "./players.js";
 import { initTrophies } from "./trophies.js";
 import { initSettings } from "./settings.js";
+import { initBadges } from "./badges.js";
 
 initDesktop();
 initAlerts();
@@ -20,3 +21,4 @@ initWallpaper();
 initPlayers();
 initTrophies();
 initSettings();
+initBadges();

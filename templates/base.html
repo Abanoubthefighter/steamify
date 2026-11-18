@@ -57,6 +57,7 @@
         <li><button class="menu-item" type="button" data-menu="tidy">Tidy up windows</button></li>
         <li><button class="menu-item" type="button" data-menu="wallpaper">Change wallpaper</button></li>
         <li><button class="menu-item" type="button" data-menu="settings">Settings</button></li>
+        <li><button class="menu-item" type="button" data-menu="badges">Badges</button></li>
         <li><button class="menu-item" type="button" data-popup-open="about">About</button></li>
         <li><button class="menu-item" type="button" data-menu="quit">Shut down</button></li>
       </ul>
@@ -71,6 +72,7 @@
     {% block chips %}{% endblock %}
     <div class="tray" data-tray></div>
     <span class="taskbar__spacer"></span>
+    {% with badge = badge_state() %}{% include "partials/badge_chip.html" %}{% endwith %}
     <time class="chip" data-clock></time>
   </footer>
 

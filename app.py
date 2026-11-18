@@ -26,6 +26,7 @@ from flask import (
 
 import api
 import background
+import badges
 import captions
 import charts
 import config
@@ -109,9 +110,23 @@ def template_globals() -> dict:
         "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
         "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
         "settings_state": settings_state,  # a function, for the same reason as wallpaper
+        "badge_state": badge_state,        # the same: only the taskbar chip in base.html asks
         "background_sync_minutes": config.BACKGROUND_SYNC_MINUTES,
         # desktop.py sets this. In a browser tab there's no tray, so settings.exe says so.
         "desktop_app": app.config.get("DESKTOP_APP", False),
+    }
+
+
+def badge_state() -> dict:
+    """Everything badges.exe and its taskbar chip show (see badges.py)."""
+    seconds = badges.running_seconds()
+    now = badges.current(seconds)
+    return {
+        "minutes": seconds // 60,
+        "current": now,
+        "next": badges.next_up(seconds),
+        "ladder": badges.ladder(seconds),
+        "line": captions.badge_line(now),
     }
 
 
@@ -466,6 +481,35 @@ def save_key():
 
 
 # --- Wallpaper (wallpaper.exe) ------------------------------------------------
+
+
+@app.get("/badges")
+def badges_window():
+    """badges.exe: fetched when the taskbar chip or Start > Badges is clicked."""
+    return render_template("partials/badges_window.html", badge=badge_state())
+
+
+@app.get("/badges/new")
+def new_badge():
+    """A badge earned since the page last showed one: its popup and the new taskbar chip.
+
+    204 (nothing) when there's no new badge. The page asks once a minute.
+    """
+    if not badges.unseen():
+        return "", 204
+    state = badge_state()
+    return jsonify(
+        key=state["current"]["key"],
+        popup=render_template("partials/badge_earned.html", badge=state),
+        chip=render_template("partials/badge_chip.html", badge=state),
+    )
+
+
+@app.post("/badges/seen")
+def badge_seen():
+    """The page showed the "new badge" popup, so don't show it again."""
+    badges.mark_seen(request.form.get("key", ""))
+    return "", 204
 
 
 @app.post("/settings")

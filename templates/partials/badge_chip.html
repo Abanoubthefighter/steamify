@@ -1,0 +1,16 @@
+{#
+  The badge chip next to the clock in the taskbar. Clicking it opens
+  badges.exe (static/js/badges.js), which also swaps in a fresh copy of this
+  chip when a new badge is earned. `badge` comes from app.badge_state().
+#}
+{% from "partials/badge_art.html" import badge_art %}
+<button class="chip chip--badge" type="button" data-open-badges data-badge-chip
+        title="badges.exe: {{ badge.minutes | hours }} of running so far">
+  {% if badge.current %}
+  {{ badge_art(badge.current.key, 18) }}
+  <span>{{ badge.current.name }}</span>
+  {% else %}
+  {{ badge_art(badge.ladder[0].key, 18, locked=true) }}
+  <span>No badge yet</span>
+  {% endif %}
+</button>

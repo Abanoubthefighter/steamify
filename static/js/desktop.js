@@ -53,6 +53,20 @@ export function element(tag, className = "", text = "") {
   return node;
 }
 
+/** Turn server-rendered HTML (escaped by Jinja) into an element. */
+export function htmlToElement(html) {
+  const holder = document.createElement("template");
+  holder.innerHTML = html;
+  return holder.content.firstElementChild;
+}
+
+/** Fetch a server-rendered piece of HTML, like a popup's content, and return its first element. */
+export async function fetchPart(url) {
+  const reply = await fetch(url);
+  if (!reply.ok) throw new Error(`The server answered ${reply.status}`);
+  return htmlToElement(await reply.text());
+}
+
 /** Play a CSS animation class from the start, even if it's already on the element. */
 function replay(win, className) {
   win.classList.remove(className);
@@ -220,8 +234,9 @@ function tidyUp() {
  * Open a floating window. `content` is a DOM node (or fragment) for its body.
  * `onClose` runs after the popup is closed, however that happens.
  * `big` makes a wide window with left-aligned content, for lists (trophies.exe).
+ * `wide` is in between: wider than a message, still centred (badges.exe).
  */
-export function openPopup({ title, content, color = "lilac", big = false, onClose }) {
+export function openPopup({ title, content, color = "lilac", big = false, wide = false, onClose }) {
   const win = document.getElementById("popup-template").content.firstElementChild.cloneNode(true);
   const heading = win.querySelector("[data-title]");
   heading.textContent = title;
@@ -232,6 +247,7 @@ export function openPopup({ title, content, color = "lilac", big = false, onClos
     win.classList.add("popup--big");
     win.querySelector("[data-popup-body]").classList.remove("center");
   }
+  if (wide) win.classList.add("popup--wide");
   win.querySelector("[data-popup-body]").append(content);
   closeHandlers.set(win, { onClose, cameFrom: document.activeElement });
 

@@ -10,6 +10,7 @@ import pytest
 import api
 import app as app_module
 import background
+import badges
 import config
 import demo
 import startup
@@ -602,3 +603,33 @@ def test_start_with_windows_can_be_switched_on_and_off(client, monkeypatch):
     assert startup.is_on()
     assert client.post("/settings", data={"start_with_windows": "0"}).get_json()["start_with_windows"] is False
     assert not startup.is_on()
+
+
+# --- badges.exe ---
+
+HOUR = 3600
+
+
+def test_the_taskbar_chip_shows_the_current_badge(client):
+    assert "No badge yet" in client.get(DEMO_PAGE).text
+    badges.add_running(config.BADGES[1][2] * HOUR)
+    assert "Floppy" in client.get(DEMO_PAGE).text.split("data-badge-chip")[1][:600]
+
+
+def test_badges_exe_shows_the_whole_ladder_and_the_next_step(client):
+    badges.add_running(3 * HOUR)
+    page = client.get("/badges").text
+    assert 'data-title="badges.exe"' in page
+    assert page.count('<li class="badge-step') == len(config.BADGES)
+    assert "Next: Dial-up at 6 h" in page and "3.0 h to go" in page
+    badges.add_running(config.BADGES[-1][2] * HOUR)
+    assert "every badge there is" in client.get("/badges").text
+
+
+def test_a_new_badge_is_announced_once(client):
+    assert client.get("/badges/new").status_code == 204
+    badges.add_running(config.BADGES[0][2] * HOUR)
+    news = client.get("/badges/new").get_json()
+    assert news["key"] == "dialup" and "Dial-up" in news["popup"] and "data-badge-chip" in news["chip"]
+    assert client.post("/badges/seen", data={"key": "dialup"}).status_code == 204
+    assert client.get("/badges/new").status_code == 204

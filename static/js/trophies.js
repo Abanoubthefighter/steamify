@@ -5,7 +5,7 @@
 // Like library.exe, sorting and searching happen in Python (stats.py). This
 // file only asks the server for the rows again and swaps the new HTML in.
 
-import { openPopup, showMessage } from "./desktop.js";
+import { fetchPart, openPopup, showMessage } from "./desktop.js";
 
 const SEARCH_DELAY = 150; // ms to wait after the last keystroke before asking the server
 
@@ -31,15 +31,6 @@ async function openGame(base, appId) {
   } catch {
     showMessage({ heading: "Can't open that", message: "This game's achievements didn't load. Try again." });
   }
-}
-
-/** Fetch a server-rendered piece of HTML and return its first element. */
-async function fetchPart(url) {
-  const reply = await fetch(url);
-  if (!reply.ok) throw new Error(`The server answered ${reply.status}`);
-  const holder = document.createElement("template");
-  holder.innerHTML = await reply.text(); // server-rendered and escaped by Jinja
-  return holder.content.firstElementChild;
 }
 
 async function openTrophies(base) {

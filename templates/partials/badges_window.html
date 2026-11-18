@@ -1,0 +1,51 @@
+{#
+  badges.exe: the badge you have, how far the next one is, and the whole
+  ladder. Fetched each time it opens, so the numbers are always current.
+  `badge` comes from app.badge_state(); the drawings from badge_art.html.
+#}
+{% from "partials/badge_art.html" import badge_art %}
+<div class="badges" data-title="badges.exe">
+  <div class="badges__now">
+    {% if badge.current %}
+    {{ badge_art(badge.current.key, 88) }}
+    {% else %}
+    {{ badge_art(badge.ladder[0].key, 88, locked=true) }}
+    {% endif %}
+    <div class="badges__words">
+      <p class="label">Your badge</p>
+      <p class="heading">{{ badge.current.name if badge.current else "None yet" }}</p>
+      <p>{{ badge.minutes | hours }} of running so far.</p>
+      <p class="note">{{ badge.line }}</p>
+    </div>
+  </div>
+
+  {% if badge.next %}
+  <div class="badges__next">
+    <p class="label">Next: {{ badge.next.name }} at {{ badge.next.hours }} h
+      <span class="label__hint">({{ badge.next.minutes_left | hours }} to go)</span></p>
+    <div class="progress" role="progressbar" aria-label="Progress to {{ badge.next.name }}"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ badge.next.percent }}"
+         style="--progress: {{ badge.next.percent }}%">
+      <span class="progress__fill"></span>
+    </div>
+  </div>
+  {% else %}
+  <p class="note">That's every badge there is. The app has run for longer than some marriages.</p>
+  {% endif %}
+
+  <ol class="badge-ladder">
+    {% for step in badge.ladder %}
+    <li class="badge-step{{ ' is-earned' if step.earned }}{{ ' is-next' if badge.next and step.key == badge.next.key }}">
+      {{ badge_art(step.key, 48, locked=not step.earned) }}
+      <span class="badge-step__name">{{ step.name }}</span>
+      <span class="badge-step__hours">{{ step.hours }} h{% if not step.earned %} · locked{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <p class="note">This counts the time the app is open, in the window or hidden in the tray. Time the computer
+    spends asleep doesn't count{% if not desktop_app %}, and neither does a browser tab: only the desktop app counts{% endif %}.</p>
+  <div class="btn-row">
+    <button class="btn btn--small" type="button" data-action="close">Ok</button>
+  </div>
+</div>

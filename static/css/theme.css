@@ -122,6 +122,7 @@
   --desktop-width: 1100px;  /* the widest the window grid gets */
   --taskbar-height: 50px;
   --popup-big-width: 860px; /* floating windows that hold a list, like trophies.exe */
+  --popup-wide-width: 560px; /* in between, like badges.exe */
 
   /* --- Motion ---------------------------------------------------------------- */
   --quick: 80ms;            /* button presses */

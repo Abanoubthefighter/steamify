@@ -1,0 +1,17 @@
+{#
+  The popup for a badge that was just earned. static/js/badges.js asks
+  /badges/new once a minute and opens this when there's something new.
+#}
+{% from "partials/badge_art.html" import badge_art %}
+<div class="badge-earned" data-title="new_badge.exe">
+  {{ badge_art(badge.current.key, 96) }}
+  <p class="label">New badge</p>
+  <p class="big">{{ badge.current.name }}</p>
+  <p>{{ badge.current.hours }} hours of keeping the app running.</p>
+  <p class="note">{{ badge.line }}</p>
+  <div class="btn-row">
+    <button class="btn" type="button" data-action="close" data-autofocus>Nice</button>
+    {# Closes this popup and opens badges.exe (static/js/badges.js). #}
+    <button class="btn btn--small" type="button" data-action="close" data-open-badges>All badges</button>
+  </div>
+</div>
