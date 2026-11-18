@@ -1,13 +1,13 @@
 """Chart data: the right bars, in the right order, with the right ones highlighted."""
 
 import json
-from datetime import date
+from datetime import date, datetime
 
 import charts
 import config
 import stats
 import storage
-from conftest import make_game, make_profile
+from conftest import make_achievements, make_game, make_profile
 
 ME = "76561198000000001"
 TODAY = date(2026, 11, 17)
@@ -30,9 +30,9 @@ def test_last_months_crosses_new_year():
     assert charts.last_months(1, TODAY) == ["2026-11"]
 
 
-def test_three_tracks_that_survive_a_trip_through_json():
+def test_four_tracks_that_survive_a_trip_through_json():
     tracks = json.loads(json.dumps(build([make_game(1, "Hades", hours=20)]), sort_keys=True))
-    assert [track["file"] for track in tracks] == ["playtime_history.wmv", "top_games.wmv", "backlog.wmv"]
+    assert [track["file"] for track in tracks] == ["playtime_history.wmv", "top_games.wmv", "backlog.wmv", "achievements.wmv"]
     for track in tracks:
         assert track["start"] in [each["key"] for each in track["views"]]
         for each in track["views"]:
@@ -97,3 +97,34 @@ def test_backlog_track_counts_games_per_band():
     assert bands["colors"][0] == "red"
     assert bands["notes"][0] == "50% of your library"
     assert backlog["caption"] == "2 of 4 played"
+
+
+# --- achievements.wmv ---
+
+
+def unlocked_on(*days):
+    """Achievements for game 1, unlocked at noon on each of these days ("2026-11-02")."""
+    achievements = make_achievements(1, unlocked=len(days))
+    for item, day in zip(achievements, days):
+        item["unlocked_at"] = int(datetime.fromisoformat(f"{day}T12:00").timestamp())
+    return achievements
+
+
+def test_achievements_track_counts_unlocks_per_month_and_per_year():
+    games = [make_game(1, "Hades", hours=20)]
+    build(games)
+    storage.save_achievements(ME, 1, 1200, unlocked_on("2023-05-01", "2026-09-10", "2026-11-02", "2026-11-03"))
+    track = build(games)[3]
+    year = view(track, "1Y")
+    assert year["labels"][-1] == "NOV" and len(year["values"]) == 12
+    assert year["values"][-3:] == [1, 0, 2]
+    assert year["colors"][-1] == "red" and "still going" in year["notes"][-1]
+    everything = view(track, "ALL")
+    assert everything["labels"] == ["2023", "2024", "2025", "2026"]  # empty years included
+    assert everything["values"] == [1, 0, 0, 3]
+    assert track["caption"] == "4 unlocks with a date"
+
+
+def test_achievements_track_without_unlocks_is_empty_but_well_formed():
+    track = build([make_game(1, "Hades", hours=20)])[3]
+    assert not any(view(track, "1Y")["values"]) and view(track, "ALL")["labels"] == [str(TODAY.year)]

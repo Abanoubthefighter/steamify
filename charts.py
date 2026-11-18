@@ -26,6 +26,7 @@ def build_tracks(player: dict, games: list[dict], summary: dict, today: date | N
         history_track(player, summary, today),
         top_games_track(games, summary),
         backlog_track(games, summary),
+        achievements_track(player, today),
     ]
 
 
@@ -113,12 +114,20 @@ def _history_view(key: str, buckets: list[str], rows: list[dict], size: str) -> 
     logged = {row["bucket"]: row for row in rows}
     values = [round(logged[bucket]["minutes"] / 60, 1) if bucket in logged else 0 for bucket in buckets]
     notes = [f"mostly {logged[bucket]['top_game']}" if bucket in logged else "nothing logged" for bucket in buckets]
+    colors, marked = _mark_best_and_current(values, notes)
+    labels, titles = zip(*(_period_names(bucket, size, many=len(buckets) > 12) for bucket in buckets))
+    return _view(key, list(labels), values, list(titles), notes, colors, marked)
 
-    # Two bars get singled out: the best one in view and the period we're still
-    # in (its bar can still grow). Each also says so in its tooltip and gets its
-    # value printed on it, so the colour is never the only clue.
-    last = len(buckets) - 1
-    colors = ["lilac"] * len(buckets)
+
+def _mark_best_and_current(values: list, notes: list[str]) -> tuple[list[str], list[int]]:
+    """Single out two bars of a time chart: the best one in view and the period we're still in.
+
+    The last bar can still grow, so it's red. Each also says so in its
+    tooltip (`notes` is changed in place) and gets its value printed on it,
+    so the colour is never the only clue. Returns (colors, marked).
+    """
+    last = len(values) - 1
+    colors = ["lilac"] * len(values)
     marked = []
     if any(values):
         best = values.index(max(values))
@@ -129,9 +138,7 @@ def _history_view(key: str, buckets: list[str], rows: list[dict], size: str) -> 
     notes[last] += ", still going"
     if values[last] and last not in marked:
         marked.append(last)
-
-    labels, titles = zip(*(_period_names(bucket, size, many=len(buckets) > 12) for bucket in buckets))
-    return _view(key, list(labels), values, list(titles), notes, colors, marked)
+    return colors, marked
 
 
 def _period_names(bucket: str, size: str, many: bool) -> tuple[str, str]:
@@ -209,3 +216,50 @@ def backlog_track(games: list[dict], summary: dict) -> dict:
             )
         ],
     }
+
+
+# --- Track 4: achievements unlocked over time --------------------------------
+# Steam dates every unlock, so unlike the playtime history this one goes
+# back to the player's first achievement, years before the first scan.
+
+
+def achievements_track(player: dict, today: date) -> dict:
+    steam_id = player["steam_id"]
+    by_year = storage.get_unlock_counts(steam_id, "year")
+    total = sum(row["unlocks"] for row in by_year)
+
+    views = []
+    for key, (size, count) in config.UNLOCK_RANGES.items():
+        if size == "month":
+            buckets = last_months(count, today)
+            counted = storage.get_unlock_counts(steam_id, "month", since=buckets[0])
+        else:
+            first = int(by_year[0]["bucket"]) if by_year else today.year
+            buckets = [str(year) for year in range(first, today.year + 1)]
+            counted = by_year
+        views.append(_unlock_view(key, buckets, counted, size))
+
+    return {
+        "file": "achievements.wmv",
+        "title": "Achievements unlocked over time",
+        "caption": f"{plural(total, 'unlock')} with a date",
+        "footnote": "dated by Steam",
+        "unit": "unlocks",
+        "horizontal": False,
+        "start": next(iter(config.UNLOCK_RANGES)),
+        "legend": [["red", "still going"], ["cream", "best"]],
+        "empty": "No dated unlocks yet. They come in with the next scan, and Steam dates every one.",
+        "views": views,
+    }
+
+
+def _unlock_view(key: str, buckets: list[str], rows: list[dict], size: str) -> dict:
+    counted = {row["bucket"]: row["unlocks"] for row in rows}
+    values = [counted.get(bucket, 0) for bucket in buckets]
+    notes = [plural(value, "unlock") if value else "nothing unlocked" for value in values]
+    colors, marked = _mark_best_and_current(values, notes)
+    if size == "year":
+        labels = titles = buckets
+    else:
+        labels, titles = zip(*(_period_names(bucket, size, many=len(buckets) > 12) for bucket in buckets))
+    return _view(key, list(labels), values, list(titles), notes, colors, marked)

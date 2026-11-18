@@ -13,12 +13,14 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Top games, recent games and the full library**, sortable and searchable.
 - **warning.exe**: a stack of popups about your habits (how much of your library you never opened, that one game eating a third of your time).
 - **achievements.exe**: how many achievements you've unlocked across your games, your latest unlocks, the games you've nearly finished, and your rarest unlock (with the share of all players who have it). If some played games haven't been checked yet, or Steam keeps a profile's achievements private, the window says so instead of pretending to be complete.
+- **trophies.exe** (View all games in achievements.exe): every game with achievements in one big window, with average completion, perfect games and this year's unlocks at the top. Sort it by latest unlock, closest to perfect, most unlocked, perfect only, not started or A to Z, or search it. Click a game to see every one of its achievements: the unlocked ones with their date and rarity, and the ones still to get, the most common first.
+- **Achievements over time** in the media player: unlocks per month for the last year, or per year since the very first one. Steam dates every unlock, so this chart goes back years, unlike the playtime history.
 - **versus.exe**: compare with a friend, game by game, and on achievements in the games you both own.
 - **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
 - **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
 
-[Full-page screenshot](docs/dashboard-full.png)
+[Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png)
 
 ## Installing
 
@@ -89,8 +91,8 @@ build_exe.bat  builds the app and its installer
 packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
-static/js/     window manager, scan progress, library, charts
-tests/         230 tests; any that tried to reach Steam would fail
+static/js/     window manager, scan progress, library, trophies, charts
+tests/         248 tests; any that tried to reach Steam would fail
 ```
 
 A few decisions worth explaining:
@@ -110,11 +112,11 @@ On my machine the dashboard for a 3,000-game library renders in about 25 ms, and
 ## Making it yours
 
 - **Colours, fonts, outline thickness, spacing:** `static/css/theme.css`. Nothing else contains a colour, and the charts read theirs from the same file.
-- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number, and for achievements: how many games to ask at once, what counts as "so close", how often rarity is refreshed).
+- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number, and for achievements: how many games to ask at once, what counts as "so close", how often rarity is refreshed, how long to wait when Steam says slow down).
 - **The jokes:** `captions.py`.
 - **A new wallpaper pattern:** add a name to `WALLPAPER_PATTERNS` in `config.py` and a `.pattern--<name>` rule in `style.css`. It shows up in wallpaper.exe, preview included. A drawing (like the default, Hills) also gets its shapes in `templates/partials/wallpaper_art.html`.
 - **The Hills colours, or how dim it is:** the `--hills-*` variables in `theme.css`. `--hills-dim: 0` shows it in full colour.
-- **A new sort order:** add one function and one line to `SORT_ORDERS` in `stats.py`. The radio button appears on its own.
+- **A new sort order:** add one function and one line to `SORT_ORDERS` in `stats.py`. The radio button appears on its own. The same goes for trophies.exe and `TROPHY_ORDERS`.
 - **Window order:** reorder the `include` lines in `templates/dashboard.html`.
 
 ## Tests

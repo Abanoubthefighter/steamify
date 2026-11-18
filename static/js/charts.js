@@ -7,7 +7,7 @@
 // Every colour and font is read from theme.css, so a reskin there recolours
 // the charts as well.
 
-import { element, reducedMotion } from "./desktop.js";
+import { element, openWindow, reducedMotion } from "./desktop.js";
 
 const STATE_KEY = "steam-stats-media"; // remembers the track and view across reloads
 const DESCRIBED_BARS = 12; // how many bars get spelled out for screen readers
@@ -48,6 +48,11 @@ export function initCharts() {
     tableOn = !tableOn;
     draw();
   });
+  // A button elsewhere can open the player on one chart: <button data-play-track="achievements.wmv">
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-play-track]");
+    if (button) playTrack(button.dataset.playTrack);
+  });
 
   const saved = readState();
   tableOn = Boolean(saved.table);
@@ -75,6 +80,14 @@ function showTrack(index, view) {
   renderViewKeys(track);
   renderLegend(track);
   draw();
+}
+
+/** Bring the media player forward on the track with this file name. */
+function playTrack(file) {
+  const index = tracks.findIndex((track) => track.file === file);
+  if (index < 0) return;
+  showTrack(index);
+  openWindow("media");
 }
 
 /** One button per view. A track with a single view needs none. */
@@ -274,7 +287,8 @@ function formatValue(value, unit, { spellOut = false } = {}) {
   const number = value >= 10 ? Math.round(value) : value;
   const text = number.toLocaleString("en", { maximumFractionDigits: 1 });
   if (unit === "h") return `${text} h`;
-  return spellOut ? `${text} ${value === 1 ? "game" : "games"}` : text;
+  if (!spellOut) return text;
+  return `${text} ${value === 1 ? unit.replace(/s$/, "") : unit}`; // "1 unlock", "12 games"
 }
 
 /** Any CSS colour, made see-through. A canvas does the parsing, so theme.css can use any colour format. */

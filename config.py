@@ -77,6 +77,12 @@ HISTORY_RANGES = {
 }
 DEFAULT_HISTORY_RANGE = "6M"
 
+# The same for the achievements chart (bar size "month" or "year"). The first one is shown first.
+UNLOCK_RANGES = {
+    "1Y": ("month", 12),
+    "ALL": ("year", None),
+}
+
 # Edges, in hours, for the "how far did you get" chart.
 # [1, 10, 50, 100] makes: never, under 1 h, 1-10 h, 10-50 h, 50-100 h, 100 h+
 PLAYTIME_EDGES = [1, 10, 50, 100]
