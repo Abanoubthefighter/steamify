@@ -230,6 +230,23 @@ def _versus(player: dict, summary: dict, friend: dict | None) -> dict | None:
         "shared": shared,
         "shared_count": shared_count,
         "caption": captions.versus_caption(friend["name"], summary["total_minutes"] - theirs["total_minutes"]),
+        "achievements": _achievement_duel(player, friend),
+    }
+
+
+def _achievement_duel(player: dict, friend: dict) -> dict | None:
+    """Achievements in versus.exe: both players over the games with achievements they share."""
+    duel = storage.get_shared_achievements(player["steam_id"], friend["steam_id"])
+    if not duel["games"]:
+        return None
+    unlocked = duel["my_unlocked"] + duel["their_unlocked"]
+    perfect = duel["my_perfect"] + duel["their_perfect"]
+    return {
+        **duel,
+        # Where each split bar is cut: your share on the left. An empty contest splits down the middle.
+        "unlocked_share": stats.percent(duel["my_unlocked"], unlocked) if unlocked else 50,
+        "perfect_share": stats.percent(duel["my_perfect"], perfect) if perfect else 50,
+        "caption": captions.versus_achievement_caption(friend["name"], duel),
     }
 
 

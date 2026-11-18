@@ -123,3 +123,18 @@ def achievement_caption(summary: dict, percent: int) -> str:
     if percent < 15:
         return "You collect games, not achievements."
     return "Plenty unlocked. Plenty more where that came from."
+
+
+def versus_achievement_caption(friend_name: str, duel: dict) -> str:
+    """The line under the achievement duel in versus.exe (see storage.get_shared_achievements)."""
+    mine, theirs = duel["my_unlocked"], duel["their_unlocked"]
+    my_perfect, their_perfect = duel["my_perfect"], duel["their_perfect"]
+    if mine == theirs:
+        return "Dead even on achievements. Suspicious, again."
+    if mine > theirs and my_perfect < their_perfect:
+        return f"More unlocks, fewer finishes. {friend_name} actually sees the credits."
+    if mine < theirs and my_perfect > their_perfect:
+        return f"{friend_name} unlocks more, but you're the one who finishes games."
+    if mine > theirs:
+        return f"{plural(mine - theirs, 'achievement')} ahead on the games you share. Rub it in, politely."
+    return f"{friend_name} has {plural(theirs - mine, 'achievement')} more on the games you share. Time to grind."

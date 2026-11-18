@@ -371,3 +371,16 @@ def test_a_library_with_no_achievements_at_all_says_so(client, steam, monkeypatc
     monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])
     scan(client, player="me")
     assert "None of the games played so far have achievements" in client.get(f"/player/{ME}").text
+
+
+def test_versus_compares_achievements_on_shared_games(client):
+    page = client.get(f"{DEMO_PAGE}?vs={demo.FRIEND_ID}").text
+    duel = storage.get_shared_achievements(demo.PLAYER_ID, demo.FRIEND_ID)
+    assert f"Achievements, on {duel['games']} shared games" in page
+    assert "Perfect games" in page
+
+
+def test_versus_leaves_achievements_out_when_there_are_none_to_compare(client, steam):
+    scan(client, player="me")
+    page = client.get(f"/player/{ME}?vs={demo.PLAYER_ID}").text
+    assert "Achievements, on" not in page

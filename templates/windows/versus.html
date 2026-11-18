@@ -1,6 +1,7 @@
 {#
   versus.exe: you against a friend. Each shared game gets one bar that is
-  split between the two of you by hours played.
+  split between the two of you by hours played. Below that, the same kind of
+  bars for achievements, over the shared games that have any.
 #}
 {% from "partials/window.html" import window %}
 {% from "partials/avatar.html" import avatar %}
@@ -40,6 +41,30 @@
   </ul>
   {% else %}
   <p class="empty">Not a single game in common. You two live in different worlds.</p>
+  {% endif %}
+
+  {% if versus.achievements %}
+  {% set duel = versus.achievements %}
+  <p class="label">Achievements, on {{ duel.games | plural("shared game") }}:</p>
+  <ul class="duels" role="list">
+    <li class="duel">
+      <span class="duel__name">Unlocked</span>
+      <span class="duel__bar" style="--mine: {{ duel.unlocked_share }}%" aria-hidden="true"></span>
+      <span class="duel__numbers">
+        <span><span class="sr-only">{{ player.name }}: </span>{{ duel.my_unlocked | number }}</span>
+        <span><span class="sr-only">{{ versus.friend.name }}: </span>{{ duel.their_unlocked | number }}</span>
+      </span>
+    </li>
+    <li class="duel">
+      <span class="duel__name">Perfect games</span>
+      <span class="duel__bar" style="--mine: {{ duel.perfect_share }}%" aria-hidden="true"></span>
+      <span class="duel__numbers">
+        <span><span class="sr-only">{{ player.name }}: </span>{{ duel.my_perfect }}</span>
+        <span><span class="sr-only">{{ versus.friend.name }}: </span>{{ duel.their_perfect }}</span>
+      </span>
+    </li>
+  </ul>
+  <p class="note center">{{ duel.caption }}</p>
   {% endif %}
 
   {% else %}

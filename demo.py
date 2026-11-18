@@ -243,8 +243,10 @@ def _invent_achievements(rng: random.Random, games: list[dict], since: float) ->
             continue
         total = rng.randint(12, 60)
         done = round(total * min(1.0, game["minutes"] / 60 / rng.uniform(15, 120)))
-        if done == total and rng.random() < 0.5:
-            done -= rng.randint(1, 3)  # well played, but those last few are always the hard ones
+        # A favourite with 150 hours or more is finished. Other well-played games
+        # often stop just short: those last few achievements are always the hard ones.
+        if done == total and game["minutes"] < 150 * 60 and rng.random() < 0.5:
+            done -= rng.randint(1, 3)
         last = game["last_played"] or time.time()
         start = min(since, last)
         # Spread over the year, with the newest one from the last time the game was played.

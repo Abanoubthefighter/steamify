@@ -92,3 +92,18 @@ def test_versus_caption_knows_who_is_ahead():
 )
 def test_achievement_caption_picks_a_line_for_the_numbers(perfect, percent, words):
     assert words in captions.achievement_caption({"perfect": perfect}, percent)
+
+
+@pytest.mark.parametrize(
+    ("mine", "theirs", "my_perfect", "their_perfect", "words"),
+    [
+        (10, 10, 1, 1, "Dead even"),
+        (20, 10, 1, 3, "fewer finishes"),
+        (10, 20, 3, 1, "you're the one who finishes"),
+        (21, 10, 2, 1, "11 achievements ahead"),
+        (10, 11, 1, 2, "1 achievement more"),
+    ],
+)
+def test_versus_achievement_caption(mine, theirs, my_perfect, their_perfect, words):
+    duel = {"my_unlocked": mine, "their_unlocked": theirs, "my_perfect": my_perfect, "their_perfect": their_perfect}
+    assert words in captions.versus_achievement_caption("pal", duel)
