@@ -342,3 +342,32 @@ def test_achievement_progress_shows_up_in_the_scan_stream(client, steam, monkeyp
     last_step = len(sync.STEPS)
     labels = [event["label"] for event in events if event.get("step") == last_step]
     assert labels == ["Checking achievements", "Checking achievements 1/2", "Checking achievements 2/2"]
+
+
+# --- achievements.exe ---------------------------------------------------------
+
+
+def test_the_demo_player_has_achievements_to_show(client):
+    page = client.get(DEMO_PAGE).text
+    assert "achievements.exe" in page
+    for heading in ("All games", "Latest unlocks", "So close"):
+        assert heading in page
+
+
+def test_achievements_wait_for_a_scan_when_none_were_checked(client, steam):
+    scan(client, player="me")  # the steam fixture's games have no achievements flag, so none get checked
+    page = client.get(f"/player/{ME}").text
+    assert "Achievements come in with the next scan" in page
+
+
+def test_achievements_explain_the_key_when_there_is_none(client, steam, monkeypatch):
+    scan(client, player="me")
+    monkeypatch.setattr(config, "STEAM_API_KEY", "")
+    assert "Achievements need a Steam API key" in client.get(f"/player/{ME}").text
+
+
+def test_a_library_with_no_achievements_at_all_says_so(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [make_game(1, "Garry's Mod", hours=3, has_stats=True)])
+    monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])
+    scan(client, player="me")
+    assert "None of the games played so far have achievements" in client.get(f"/player/{ME}").text

@@ -57,6 +57,7 @@ def scan(query: str, force: bool = False):
     yield {"label": STEPS[4]}
     for done, todo in check_achievements(steam_id, games):
         yield {"detail": f"{done}/{todo}"}
+    fetch_missing_icons(steam_id)
     yield {"steam_id": steam_id, "gained": gained}
 
 
@@ -100,3 +101,18 @@ def check_achievements(steam_id: str, games: list[dict]):
             yield done, len(todo)
     finally:
         pool.shutdown(wait=True, cancel_futures=True)  # don't start games that haven't been asked about yet
+
+
+def fetch_missing_icons(steam_id: str) -> None:
+    """Icons for the achievements achievements.exe is about to show.
+
+    Icons come from a separate call per game, so only the games in the
+    "latest unlocks" list are asked about, and only once. Missing icons
+    aren't worth failing over: the window shows a letter instead.
+    """
+    unlocks = storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT)
+    for app_id in {unlock["app_id"] for unlock in unlocks if not unlock["icon"]}:
+        try:
+            storage.save_achievement_icons(app_id, api.get_achievement_icons(app_id))
+        except api.SteamError:
+            continue

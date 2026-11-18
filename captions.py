@@ -1,4 +1,4 @@
-"""The words in warning.exe and versus.exe.
+"""The words in warning.exe, versus.exe and achievements.exe.
 
 All the jokes live here on purpose, so they're easy to find, edit or delete.
 Each *_alert function looks at the numbers and returns one popup, or None
@@ -109,3 +109,17 @@ def versus_caption(friend_name: str, lead_minutes: int) -> str:
     if lead_minutes > 0:
         return f"You're {gap} ahead. Whether that counts as winning is up to you."
     return f"{friend_name} is {gap} ahead. Catch up, or go outside. Your call."
+
+
+def achievement_caption(summary: dict, percent: int) -> str:
+    """The line under the totals in achievements.exe."""
+    perfect = summary["perfect"]
+    if perfect >= 10:
+        return f"{plural(perfect, 'game')} finished down to the last achievement. Completionist, or no life? Both."
+    if percent >= 60:
+        return "More than half of everything unlocked. The developers thank you personally."
+    if perfect:
+        return f"{plural(perfect, 'game')} done to 100%. The rest are, let's say, in progress."
+    if percent < 15:
+        return "You collect games, not achievements."
+    return "Plenty unlocked. Plenty more where that came from."

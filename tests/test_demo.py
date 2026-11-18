@@ -74,3 +74,11 @@ def test_pretend_scan_walks_through_the_same_steps(monkeypatch):
     events = list(demo.scan(demo.PLAYER_ID))
     assert [event["label"] for event in events[:-1]] == list(sync.STEPS)
     assert events[-1] == {"steam_id": demo.PLAYER_ID, "gained": 0}
+
+
+def test_demo_players_get_made_up_achievements():
+    demo.install(force=True)
+    mine = storage.get_achievement_summary(demo.PLAYER_ID)
+    assert mine["games"] > 0 and 0 < mine["unlocked"] < mine["total"]
+    assert storage.get_recent_unlocks(demo.PLAYER_ID, 3)
+    assert storage.get_shared_achievements(demo.PLAYER_ID, demo.FRIEND_ID)["games"] > 0

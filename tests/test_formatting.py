@@ -62,3 +62,8 @@ def test_dates():
     assert formatting.year(1489500000) == "2017"
     assert formatting.long_date(None) == "unknown"
     assert formatting.long_date(1489500000).endswith("Mar 2017")
+
+
+def test_number_gets_thousands_commas():
+    assert formatting.number(1284) == "1,284"
+    assert formatting.number(7) == "7"

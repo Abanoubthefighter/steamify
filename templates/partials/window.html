@@ -10,10 +10,11 @@
   color     title bar colour: "lilac", "red" or "sand" (the names come from theme.css)
   controls  which round buttons to show, e.g. "close" or "close min max"
   wide      take up two columns of the desktop grid
+  full      take up the whole width of the desktop grid
   stack     draw "more windows underneath" outlines behind this one (0, 1 or 2)
 #}
-{% macro window(id, title, color="lilac", controls="close min max", wide=false, stack=none) %}
-<section class="win win--{{ color }}{{ ' win--wide' if wide }}{{ ' win--stack' if stack is not none }}"
+{% macro window(id, title, color="lilac", controls="close min max", wide=false, full=false, stack=none) %}
+<section class="win win--{{ color }}{{ ' win--wide' if wide }}{{ ' win--full' if full }}{{ ' win--stack' if stack is not none }}"
          data-win="{{ id }}"{% if stack is not none %} data-stack="{{ stack }}"{% endif %} aria-labelledby="{{ id }}-title">
   <header class="titlebar">
     {% if "close" in controls %}

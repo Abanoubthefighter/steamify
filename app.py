@@ -78,6 +78,7 @@ app.jinja_env.filters.update(
     hours=formatting.hours,
     ago=formatting.time_ago,
     plural=formatting.plural,
+    number=formatting.number,
     last_played=formatting.last_played,
     long_date=formatting.long_date,
     year=formatting.year,
@@ -159,6 +160,7 @@ def dashboard(steam_id: str):
         recent_games=stats.recent_games(games, config.RECENT_GAMES_COUNT),
         tracks=charts.build_tracks(player, games, summary),
         versus=_versus(player, summary, friend),
+        achievements=_achievements(steam_id),
         library=_library_page(games, request.args),
         sort_choices=stats.sort_choices(),
         players=[person for person in storage.list_players(config.PLAYERS_IN_MENU) if person["steam_id"] != demo.FRIEND_ID],
@@ -228,6 +230,23 @@ def _versus(player: dict, summary: dict, friend: dict | None) -> dict | None:
         "shared": shared,
         "shared_count": shared_count,
         "caption": captions.versus_caption(friend["name"], summary["total_minutes"] - theirs["total_minutes"]),
+    }
+
+
+def _achievements(steam_id: str) -> dict | None:
+    """The numbers behind achievements.exe, or None if no game has been checked yet."""
+    totals = storage.get_achievement_summary(steam_id)
+    if not totals["checked"]:
+        return None
+    percent = stats.percent(totals["unlocked"], totals["total"])
+    nearly = storage.get_nearly_done(steam_id, config.NEARLY_DONE_PERCENT, config.NEARLY_DONE_COUNT)
+    return {
+        **totals,
+        "percent": percent,
+        "caption": captions.achievement_caption(totals, percent),
+        "recent": storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT),
+        "nearly": [{**game, "percent": stats.percent(game["unlocked"], game["total"])} for game in nearly],
+        "nearly_percent": config.NEARLY_DONE_PERCENT,
     }
 
 

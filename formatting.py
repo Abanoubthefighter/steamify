@@ -30,6 +30,11 @@ def hours(minutes: int) -> str:
     return f"{round(value):,} h"
 
 
+def number(count: int) -> str:
+    """A whole number with thousands commas: 1284 becomes 1,284."""
+    return f"{count:,}"
+
+
 def plural(count: int, word: str) -> str:
     """1 game, 42 games. Only for words that take a plain "s"."""
     return f"{count:,} {word}" if count == 1 else f"{count:,} {word}s"

@@ -322,31 +322,42 @@ def save_achievements(steam_id: str, app_id: int, minutes: int, achievements: li
     An empty list is saved too: it records "this game has none", so the
     game isn't asked about again until it's played some more.
     """
-    unlocked = [item for item in achievements if item["achieved"]]
     with open_db() as db:
-        db.execute(
-            """
-            INSERT INTO achievement_games (steam_id, app_id, total, unlocked, checked_minutes)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (steam_id, app_id) DO UPDATE SET
-                total = excluded.total, unlocked = excluded.unlocked, checked_minutes = excluded.checked_minutes
-            """,
-            (steam_id, app_id, len(achievements), len(unlocked), minutes),
-        )
-        # Keep any icon or rarity already known; only the words can change.
-        db.executemany(
-            """
-            INSERT INTO achievement_info (app_id, api_name, name, description)
-            VALUES (:app_id, :api_name, :name, :description)
-            ON CONFLICT (app_id, api_name) DO UPDATE SET name = excluded.name, description = excluded.description
-            """,
-            ({**item, "app_id": app_id} for item in achievements),
-        )
-        db.execute("DELETE FROM unlocks WHERE steam_id = ? AND app_id = ?", (steam_id, app_id))
-        db.executemany(
-            "INSERT INTO unlocks (steam_id, app_id, api_name, unlocked_at) VALUES (?, ?, ?, ?)",
-            ((steam_id, app_id, item["api_name"], item["unlocked_at"]) for item in unlocked),
-        )
+        _write_achievements(db, steam_id, app_id, minutes, achievements)
+
+
+def save_many_achievements(steam_id: str, checked: list[tuple[int, int, list[dict]]]) -> None:
+    """save_achievements for many games at once, as (app_id, minutes, achievements), in one go."""
+    with open_db() as db:
+        for app_id, minutes, achievements in checked:
+            _write_achievements(db, steam_id, app_id, minutes, achievements)
+
+
+def _write_achievements(db: sqlite3.Connection, steam_id: str, app_id: int, minutes: int, achievements: list[dict]) -> None:
+    unlocked = [item for item in achievements if item["achieved"]]
+    db.execute(
+        """
+        INSERT INTO achievement_games (steam_id, app_id, total, unlocked, checked_minutes)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (steam_id, app_id) DO UPDATE SET
+            total = excluded.total, unlocked = excluded.unlocked, checked_minutes = excluded.checked_minutes
+        """,
+        (steam_id, app_id, len(achievements), len(unlocked), minutes),
+    )
+    # Keep any icon or rarity already known; only the words can change.
+    db.executemany(
+        """
+        INSERT INTO achievement_info (app_id, api_name, name, description)
+        VALUES (:app_id, :api_name, :name, :description)
+        ON CONFLICT (app_id, api_name) DO UPDATE SET name = excluded.name, description = excluded.description
+        """,
+        ({**item, "app_id": app_id} for item in achievements),
+    )
+    db.execute("DELETE FROM unlocks WHERE steam_id = ? AND app_id = ?", (steam_id, app_id))
+    db.executemany(
+        "INSERT INTO unlocks (steam_id, app_id, api_name, unlocked_at) VALUES (?, ?, ?, ?)",
+        ((steam_id, app_id, item["api_name"], item["unlocked_at"]) for item in unlocked),
+    )
 
 
 def save_achievement_icons(app_id: int, icons: dict[str, str]) -> None:

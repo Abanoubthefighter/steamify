@@ -1,0 +1,77 @@
+{#
+  achievements.exe: totals, the latest unlocks and the games that are nearly
+  done. The numbers come from the "Checking achievements" step of a scan
+  (sync.py); this window only shows what's saved.
+#}
+{% from "partials/window.html" import window %}
+{% from "partials/stat_tile.html" import stat_tile %}
+{% call window("achievements", "achievements.exe", color="red", full=true) %}
+<div class="body">
+  {% if achievements and achievements.games %}
+  <div class="achievements">
+    <section class="achievements__part" aria-labelledby="achievements-totals">
+      <h3 class="label" id="achievements-totals">All games</h3>
+      <div class="tiles">
+        {{ stat_tile(achievements.unlocked | number, "unlocked") }}
+        {{ stat_tile(achievements.percent ~ "%", "of " ~ achievements.total | number) }}
+        {{ stat_tile(achievements.perfect, "perfect " ~ ("game" if achievements.perfect == 1 else "games")) }}
+      </div>
+      <div class="progress" role="progressbar" aria-label="Share of achievements unlocked"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ achievements.percent }}"
+           style="--progress: {{ achievements.percent }}%">
+        <span class="progress__fill"></span>
+      </div>
+      <p class="note">{{ achievements.caption }}</p>
+    </section>
+
+    <section class="achievements__part" aria-labelledby="achievements-latest">
+      <h3 class="label" id="achievements-latest">Latest unlocks</h3>
+      {% if achievements.recent %}
+      <ul class="unlocks" role="list">
+        {% for unlock in achievements.recent %}
+        <li class="unlock" title="{{ unlock.description }}">
+          {% if unlock.icon %}
+          <img class="row__icon" src="{{ unlock.icon }}" alt="" width="24" height="24" loading="lazy" data-hide-on-error>
+          {% else %}
+          <span class="row__icon row__icon--letter" aria-hidden="true">{{ unlock.name[:1] | upper }}</span>
+          {% endif %}
+          <span class="unlock__text">
+            <span class="unlock__name">{{ unlock.name }}</span>
+            <span class="unlock__game">{{ unlock.game }}</span>
+          </span>
+          <span class="unlock__when">{{ unlock.unlocked_at | ago }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="note">No unlocks with a date yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="achievements__part" aria-labelledby="achievements-close">
+      <h3 class="label" id="achievements-close">So close</h3>
+      {% if achievements.nearly %}
+      <ul class="nearly" role="list">
+        {% for game in achievements.nearly %}
+        <li class="nearly__game">
+          <span class="nearly__name">{{ game.name }}</span>
+          <span class="meter" style="--progress: {{ game.percent }}%" aria-hidden="true"></span>
+          <span class="nearly__count">{{ game.unlocked }}/{{ game.total }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="note">No game at {{ achievements.nearly_percent }}% or more that isn't finished already.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {% elif achievements %}
+  <p class="empty">None of the games played so far have achievements. Bold.</p>
+  {% elif has_key or is_demo %}
+  <p class="empty">Achievements come in with the next scan. Press Sync now in sync.exe.</p>
+  {% else %}
+  <p class="empty">Achievements need a Steam API key, like real profiles do. Add one in scan.exe.</p>
+  {% endif %}
+</div>
+{% endcall %}

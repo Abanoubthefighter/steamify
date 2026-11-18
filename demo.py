@@ -92,6 +92,16 @@ SHELF = [
 ]  # fmt: skip
 
 
+# Names for the made-up achievements. Real ones come from Steam, with each game's own.
+ACHIEVEMENT_NAMES = [
+    "First Steps", "Getting Warmer", "No Turning Back", "Night Owl", "One More Run", "Explorer",
+    "Hoarder", "Untouchable", "Speed Demon", "Pacifist", "Collector", "Survivor", "Lucky Break",
+    "Iron Will", "Big Spender", "Unstoppable", "Know-It-All", "Close Call", "Overachiever", "The Long Way Round",
+]
+# Achievements get their own random numbers, so adding them didn't change the demo library.
+ACHIEVEMENT_SEED = SEED + 1
+
+
 def is_demo(steam_id: str) -> bool:
     return steam_id in (PLAYER_ID, FRIEND_ID)
 
@@ -118,7 +128,16 @@ def install(force: bool = False) -> None:
     storage.save_snapshot(PLAYER, games, now=first_scan)
     storage.add_history(PLAYER_ID, history)
     storage.save_snapshot(PLAYER, games)
-    storage.save_snapshot(FRIEND, _friend_library(rng, games))
+    friend_games = _friend_library(rng, games)
+    storage.save_snapshot(FRIEND, friend_games)
+
+    unlock_rng = random.Random(ACHIEVEMENT_SEED)
+    for steam_id, owned in ((PLAYER_ID, games), (FRIEND_ID, friend_games)):
+        minutes = {game["app_id"]: game["minutes"] for game in owned}
+        invented = _invent_achievements(unlock_rng, owned, first_scan)
+        storage.save_many_achievements(
+            steam_id, [(app_id, minutes[app_id], achievements) for app_id, achievements in invented.items()]
+        )
 
 
 def scan(query: str, force: bool = False):
@@ -209,6 +228,40 @@ def _player_library(rng: random.Random, today: date) -> tuple[list[dict], list[t
 
     history = [(day.isoformat(), ids[name], minutes) for (day, name), minutes in sessions.items()]
     return games, history
+
+
+def _invent_achievements(rng: random.Random, games: list[dict], since: float) -> dict[int, list[dict]]:
+    """Made-up achievements for the played games: {app_id: [achievement, ...]}.
+
+    The more a game was played, the more of its achievements are done, and
+    they were unlocked between `since` and the last time it was played.
+    About one game in four has none at all, like on real Steam.
+    """
+    invented = {}
+    for game in games:
+        if not game["minutes"] or rng.random() < 0.25:
+            continue
+        total = rng.randint(12, 60)
+        done = round(total * min(1.0, game["minutes"] / 60 / rng.uniform(15, 120)))
+        if done == total and rng.random() < 0.5:
+            done -= rng.randint(1, 3)  # well played, but those last few are always the hard ones
+        last = game["last_played"] or time.time()
+        start = min(since, last)
+        # Spread over the year, with the newest one from the last time the game was played.
+        dates = sorted(int(rng.uniform(start, last)) for _ in range(done))
+        if dates:
+            dates[-1] = int(last - rng.uniform(0, DAY / 4))
+        invented[game["app_id"]] = [
+            {
+                "api_name": f"DEMO_{n}",
+                "name": ACHIEVEMENT_NAMES[(n + abs(game["app_id"])) % len(ACHIEVEMENT_NAMES)],
+                "description": "",
+                "achieved": n < done,
+                "unlocked_at": dates[n] if n < done else None,
+            }
+            for n in range(total)
+        ]
+    return invented
 
 
 def _friend_library(rng: random.Random, games: list[dict]) -> list[dict]:

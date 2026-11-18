@@ -1,5 +1,7 @@
 """The popups in warning.exe: does the right one show up for the right numbers?"""
 
+import pytest
+
 import captions
 import config
 import stats
@@ -82,3 +84,11 @@ def test_versus_caption_knows_who_is_ahead():
     assert "You're 2.0 h ahead" in captions.versus_caption("sam", 120)
     assert captions.versus_caption("sam", -120).startswith("sam is 2.0 h ahead")
     assert "tie" in captions.versus_caption("sam", 0)
+
+
+@pytest.mark.parametrize(
+    ("perfect", "percent", "words"),
+    [(12, 40, "Completionist"), (0, 70, "More than half"), (2, 30, "done to 100%"), (0, 5, "collect games"), (0, 30, "Plenty")],
+)
+def test_achievement_caption_picks_a_line_for_the_numbers(perfect, percent, words):
+    assert words in captions.achievement_caption({"perfect": perfect}, percent)
