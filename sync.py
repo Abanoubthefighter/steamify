@@ -57,8 +57,8 @@ def scan(query: str, force: bool = False):
     gained = storage.save_snapshot(profile, games)
 
     yield {"label": STEPS[4]}
-    for done, todo in check_achievements(steam_id, games):
-        yield {"detail": f"{done}/{todo}"}
+    for detail in check_achievements(steam_id, games):
+        yield {"detail": detail}
 
     yield {"label": STEPS[5]}
     for done, todo in check_rarity(steam_id):
@@ -88,22 +88,48 @@ def games_to_check(games: list[dict], checked_minutes: dict[int, int]) -> list[d
 
 
 def check_achievements(steam_id: str, games: list[dict]):
-    """Ask Steam about the games from games_to_check. Yields (done, todo) after each game."""
+    """Ask Steam about the games from games_to_check.
+
+    Yields a progress line for the sync window after each game ("12/40").
+    If Steam says "slow down", this waits a bit and carries on one game at a
+    time, a few times over (config.SLOW_DOWN_RETRIES), before leaving the
+    rest for the next scan. Before, it gave up at the first "slow down",
+    and a big library could stay half-checked for a long time.
+    """
     todo = games_to_check(games, storage.get_checked_minutes(steam_id))
+    waiting = list(todo)
+    done = 0
 
     def ask(game: dict) -> list[dict]:
         return api.get_achievements(steam_id, game["app_id"])
 
-    for done, (game, answer) in enumerate(_a_few_at_a_time(ask, todo), start=1):
-        if isinstance(answer, (api.RateLimited, api.PrivateAchievements)):
-            return  # the rest wait for the next scan
-        if isinstance(answer, api.SteamError):
-            if not isinstance(answer, SKIPPABLE):
-                raise answer
-        else:
-            # Saved here, on this thread, so only one thread ever writes to the database.
-            storage.save_achievements(steam_id, game["app_id"], game["minutes"], answer)
-        yield done, len(todo)
+    for attempt in range(config.SLOW_DOWN_RETRIES + 1):
+        if attempt:
+            yield f"{done}/{len(todo)}, Steam asked us to wait"
+            time.sleep(config.SLOW_DOWN_SECONDS * attempt)
+        workers = config.ACHIEVEMENT_WORKERS if attempt == 0 else 1
+        slowed_down = False
+        answers = _a_few_at_a_time(ask, waiting, workers)
+        try:
+            for game, answer in answers:
+                if isinstance(answer, api.PrivateAchievements):
+                    return  # private for one game means private for all of them
+                if isinstance(answer, api.RateLimited):
+                    slowed_down = True
+                    break  # closing `answers` cancels the calls that haven't gone out yet
+                if isinstance(answer, api.SteamError):
+                    if not isinstance(answer, SKIPPABLE):
+                        raise answer
+                else:
+                    # Saved here, on this thread, so only one thread ever writes to the database.
+                    storage.save_achievements(steam_id, game["app_id"], game["minutes"], answer)
+                waiting.remove(game)
+                done += 1
+                yield f"{done}/{len(todo)}"
+        finally:
+            answers.close()
+        if not slowed_down:
+            return
 
 
 def check_rarity(steam_id: str):
@@ -142,8 +168,8 @@ def fetch_missing_icons(steam_id: str) -> None:
             continue
 
 
-def _a_few_at_a_time(ask, items: list):
-    """Call ask(item) for every item, config.ACHIEVEMENT_WORKERS at once.
+def _a_few_at_a_time(ask, items: list, workers: int | None = None):
+    """Call ask(item) for every item, `workers` at once (config.ACHIEVEMENT_WORKERS if not given).
 
     Yields (item, answer) in the order the answers come back. If Steam said
     no, the answer is the SteamError, so the caller decides what it means.
@@ -151,7 +177,7 @@ def _a_few_at_a_time(ask, items: list):
     """
     if not items:
         return
-    pool = ThreadPoolExecutor(max_workers=config.ACHIEVEMENT_WORKERS)
+    pool = ThreadPoolExecutor(max_workers=workers or config.ACHIEVEMENT_WORKERS)
     try:
         asked = {pool.submit(ask, item): item for item in items}
         for answer in as_completed(asked):

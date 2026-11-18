@@ -139,13 +139,51 @@ def test_a_game_that_times_out_is_tried_again_next_scan(achievements):
     assert asked == [10]
 
 
-def test_being_told_to_slow_down_stops_the_achievements_but_not_the_scan(achievements, monkeypatch):
-    asked, answers, _ = achievements
+@pytest.fixture
+def waits(monkeypatch):
+    """Record the pauses a scan takes instead of actually sleeping through them."""
+    slept = []
+    monkeypatch.setattr(sync.time, "sleep", slept.append)
+    return slept
+
+
+def test_being_told_to_slow_down_waits_then_carries_on(achievements, waits, monkeypatch):
     monkeypatch.setattr(sync.config, "ACHIEVEMENT_WORKERS", 1)  # one at a time, so the order is fixed
+    answer_normally = api.get_achievements
+    told = []
+
+    def slow_down_once(steam_id, app_id):
+        if not told:  # the very first call; after the wait Steam is fine again
+            told.append(app_id)
+            raise api.RateLimited()
+        return answer_normally(steam_id, app_id)
+
+    monkeypatch.setattr(api, "get_achievements", slow_down_once)
+    events = list(sync.scan("tester"))
+    assert waits == [sync.config.SLOW_DOWN_SECONDS]
+    assert {"detail": "0/2, Steam asked us to wait"} in events
+    assert storage.get_achievement_summary(ME)["checked"] == 2
+
+
+def test_if_steam_keeps_saying_slow_down_the_rest_wait_for_the_next_scan(achievements, waits):
+    asked, answers, _ = achievements
     answers[10] = api.RateLimited()
     answers[40] = api.RateLimited()
     events = list(sync.scan("tester"))
+    assert events[-1]["steam_id"] == ME  # the scan itself still finishes
+    seconds = sync.config.SLOW_DOWN_SECONDS
+    assert waits == [seconds * n for n in range(1, sync.config.SLOW_DOWN_RETRIES + 1)]
+    assert storage.get_achievement_summary(ME)["checked"] == 0
+
+
+def test_private_achievements_stop_the_check_at_once(achievements, waits, monkeypatch):
+    asked, answers, _ = achievements
+    monkeypatch.setattr(sync.config, "ACHIEVEMENT_WORKERS", 1)
+    answers[10] = api.PrivateAchievements()
+    answers[40] = api.PrivateAchievements()
+    events = list(sync.scan("tester"))
     assert events[-1]["steam_id"] == ME
+    assert waits == []  # no point waiting: Steam won't change its mind in a few seconds
     assert storage.get_achievement_summary(ME)["checked"] == 0
 
 
