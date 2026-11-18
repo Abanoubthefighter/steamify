@@ -89,6 +89,13 @@ ABANDONED_DAYS = 365    # a favourite untouched for this long counts as abandone
 FAVOURITES_COUNT = 10   # how far down the most-played list still counts as "a favourite"
 MAX_ALERTS = 5
 
+# --- Achievements (achievements.exe) -------------------------------------------
+
+ACHIEVEMENT_WORKERS = 4     # games asked about at the same time during a scan (Steam has one call per game)
+NEARLY_DONE_PERCENT = 80    # "so close": at least this much of a game's achievements, but not all
+NEARLY_DONE_COUNT = 3       # games listed under "so close"
+RECENT_UNLOCKS_COUNT = 4    # latest unlocks listed
+
 # --- Wallpaper (wallpaper.exe) -----------------------------------------------
 
 # The built-in wallpapers: key -> name shown in wallpaper.exe. Each key has a

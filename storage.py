@@ -56,6 +56,38 @@ CREATE TABLE IF NOT EXISTS play_log (
     PRIMARY KEY (steam_id, day, app_id)
 ) WITHOUT ROWID;
 
+-- Achievement totals per player per game, plus how long the game had been
+-- played when Steam was last asked. Achievements only unlock while playing,
+-- so a game is only asked about again once its playtime has gone up.
+CREATE TABLE IF NOT EXISTS achievement_games (
+    steam_id         TEXT    NOT NULL REFERENCES players (steam_id) ON DELETE CASCADE,
+    app_id           INTEGER NOT NULL REFERENCES games (app_id),
+    total            INTEGER NOT NULL,   -- achievements in the game (0: it has none)
+    unlocked         INTEGER NOT NULL,
+    checked_minutes  INTEGER NOT NULL,   -- the game's playtime when it was checked
+    PRIMARY KEY (steam_id, app_id)
+) WITHOUT ROWID;
+
+-- Every unlocked achievement. Locked ones aren't stored; "total" above counts them.
+CREATE TABLE IF NOT EXISTS unlocks (
+    steam_id     TEXT    NOT NULL REFERENCES players (steam_id) ON DELETE CASCADE,
+    app_id       INTEGER NOT NULL REFERENCES games (app_id),
+    api_name     TEXT    NOT NULL,
+    unlocked_at  INTEGER,                -- unix time; NULL for old unlocks Steam has no date for
+    PRIMARY KEY (steam_id, app_id, api_name)
+) WITHOUT ROWID;
+
+-- Names, icons and rarity, stored once per achievement rather than once per player.
+CREATE TABLE IF NOT EXISTS achievement_info (
+    app_id       INTEGER NOT NULL REFERENCES games (app_id),
+    api_name     TEXT    NOT NULL,
+    name         TEXT    NOT NULL,
+    description  TEXT    NOT NULL DEFAULT '',
+    icon         TEXT,                   -- picture address, fetched when it's first shown
+    percent      REAL,                   -- share of all players who have it
+    PRIMARY KEY (app_id, api_name)
+) WITHOUT ROWID;
+
 -- Small things to remember between runs, like who was on screen last.
 CREATE TABLE IF NOT EXISTS settings (
     key    TEXT PRIMARY KEY,
@@ -270,6 +302,146 @@ def get_shared_games(steam_id: str, friend_id: str, limit: int) -> tuple[list[di
             (steam_id, friend_id, limit),
         ).fetchall()
     return [dict(row) for row in rows], (rows[0]["shared_count"] if rows else 0)
+
+
+# --- Achievements --------------------------------------------------------------
+
+
+def get_checked_minutes(steam_id: str) -> dict[int, int]:
+    """For every game whose achievements were checked: its playtime at the time. {app_id: minutes}"""
+    with open_db() as db:
+        rows = db.execute(
+            "SELECT app_id, checked_minutes FROM achievement_games WHERE steam_id = ?", (steam_id,)
+        ).fetchall()
+    return dict(rows)
+
+
+def save_achievements(steam_id: str, app_id: int, minutes: int, achievements: list[dict]) -> None:
+    """Save one game's achievements for one player, as api.get_achievements returns them.
+
+    An empty list is saved too: it records "this game has none", so the
+    game isn't asked about again until it's played some more.
+    """
+    unlocked = [item for item in achievements if item["achieved"]]
+    with open_db() as db:
+        db.execute(
+            """
+            INSERT INTO achievement_games (steam_id, app_id, total, unlocked, checked_minutes)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (steam_id, app_id) DO UPDATE SET
+                total = excluded.total, unlocked = excluded.unlocked, checked_minutes = excluded.checked_minutes
+            """,
+            (steam_id, app_id, len(achievements), len(unlocked), minutes),
+        )
+        # Keep any icon or rarity already known; only the words can change.
+        db.executemany(
+            """
+            INSERT INTO achievement_info (app_id, api_name, name, description)
+            VALUES (:app_id, :api_name, :name, :description)
+            ON CONFLICT (app_id, api_name) DO UPDATE SET name = excluded.name, description = excluded.description
+            """,
+            ({**item, "app_id": app_id} for item in achievements),
+        )
+        db.execute("DELETE FROM unlocks WHERE steam_id = ? AND app_id = ?", (steam_id, app_id))
+        db.executemany(
+            "INSERT INTO unlocks (steam_id, app_id, api_name, unlocked_at) VALUES (?, ?, ?, ?)",
+            ((steam_id, app_id, item["api_name"], item["unlocked_at"]) for item in unlocked),
+        )
+
+
+def save_achievement_icons(app_id: int, icons: dict[str, str]) -> None:
+    """Remember icon addresses, {api name: address}, for a game's achievements."""
+    with open_db() as db:
+        db.executemany(
+            "UPDATE achievement_info SET icon = ? WHERE app_id = ? AND api_name = ?",
+            ((icon, app_id, api_name) for api_name, icon in icons.items()),
+        )
+
+
+def get_achievement_summary(steam_id: str) -> dict:
+    """Achievement totals over the games a player owns right now.
+
+    {"unlocked", "total", "games" (with achievements), "perfect" (every
+    achievement unlocked), "checked" (games looked at so far)}
+    """
+    with open_db() as db:
+        row = db.execute(
+            """
+            SELECT COALESCE(SUM(a.unlocked), 0)                       AS unlocked,
+                   COALESCE(SUM(a.total), 0)                          AS total,
+                   COUNT(*) FILTER (WHERE a.total > 0)                AS games,
+                   COUNT(*) FILTER (WHERE a.total > 0 AND a.unlocked = a.total) AS perfect,
+                   COUNT(*)                                           AS checked
+            FROM achievement_games AS a
+            -- only games still in the library count (not ones refunded since)
+            JOIN library AS l ON l.steam_id = a.steam_id AND l.app_id = a.app_id
+            WHERE a.steam_id = ?
+            """,
+            (steam_id,),
+        ).fetchone()
+    return dict(row)
+
+
+def get_recent_unlocks(steam_id: str, limit: int) -> list[dict]:
+    """The latest achievements a player unlocked, newest first, with their game."""
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT u.app_id, u.api_name, u.unlocked_at, i.name, i.description, i.icon, g.name AS game
+            FROM unlocks AS u
+            JOIN achievement_info AS i ON i.app_id = u.app_id AND i.api_name = u.api_name
+            JOIN games AS g ON g.app_id = u.app_id
+            JOIN library AS l ON l.steam_id = u.steam_id AND l.app_id = u.app_id
+            WHERE u.steam_id = ? AND u.unlocked_at IS NOT NULL
+            ORDER BY u.unlocked_at DESC
+            LIMIT ?
+            """,
+            (steam_id, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_nearly_done(steam_id: str, at_least_percent: int, limit: int) -> list[dict]:
+    """Games with most, but not all, of their achievements unlocked. Closest to done first."""
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT a.app_id, g.name, a.unlocked, a.total
+            FROM achievement_games AS a
+            JOIN games AS g ON g.app_id = a.app_id
+            JOIN library AS l ON l.steam_id = a.steam_id AND l.app_id = a.app_id
+            WHERE a.steam_id = ? AND a.total > 0 AND a.unlocked < a.total
+              AND a.unlocked * 100 >= a.total * ?
+            ORDER BY a.unlocked * 1.0 / a.total DESC, a.total - a.unlocked, g.name
+            LIMIT ?
+            """,
+            (steam_id, at_least_percent, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_shared_achievements(steam_id: str, friend_id: str) -> dict:
+    """Achievement totals for two players, over the games with achievements they both own.
+
+    {"games", "my_unlocked", "their_unlocked", "my_perfect", "their_perfect"}
+    """
+    with open_db() as db:
+        row = db.execute(
+            """
+            SELECT COUNT(*)                                                 AS games,
+                   COALESCE(SUM(mine.unlocked), 0)                          AS my_unlocked,
+                   COALESCE(SUM(theirs.unlocked), 0)                        AS their_unlocked,
+                   COUNT(*) FILTER (WHERE mine.unlocked = mine.total)       AS my_perfect,
+                   COUNT(*) FILTER (WHERE theirs.unlocked = theirs.total)   AS their_perfect
+            FROM achievement_games AS mine
+            JOIN achievement_games AS theirs ON theirs.app_id = mine.app_id
+            JOIN library AS my_copy ON my_copy.steam_id = mine.steam_id AND my_copy.app_id = mine.app_id
+            JOIN library AS their_copy ON their_copy.steam_id = theirs.steam_id AND their_copy.app_id = theirs.app_id
+            WHERE mine.steam_id = ? AND theirs.steam_id = ? AND mine.total > 0 AND theirs.total > 0
+            """,
+            (steam_id, friend_id),
+        ).fetchone()
+    return dict(row)
 
 
 # --- Settings ----------------------------------------------------------------

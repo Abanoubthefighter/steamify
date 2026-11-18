@@ -261,7 +261,10 @@ def _scan_events(player_text: str, friend_text: str, force: bool):
             for event in scanner(query, force=force):
                 if "label" in event:
                     step += 1
-                    yield _line(step=step, steps=step_count, label=prefix + event["label"])
+                    label = prefix + event["label"]
+                    yield _line(step=step, steps=step_count, label=label)
+                elif "detail" in event:  # progress inside a long step, like "12/40"
+                    yield _line(step=step, steps=step_count, label=f"{label} {event['detail']}")
                 else:
                     found.append(event["steam_id"])
                     gained += event["gained"]

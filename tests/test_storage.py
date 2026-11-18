@@ -6,7 +6,7 @@ from datetime import date
 import pytest
 
 import storage
-from conftest import make_game, make_profile
+from conftest import make_achievements, make_game, make_profile
 
 ME = "76561198000000001"
 FRIEND = "76561198000000002"
@@ -147,3 +147,68 @@ def test_settings_round_trip():
     storage.set_setting("last_player", ME)
     storage.set_setting("last_player", FRIEND)
     assert storage.get_setting("last_player") == FRIEND
+
+
+# --- Achievements -------------------------------------------------------------
+
+
+def owns(steam_id, *games):
+    """Save a player who owns these games."""
+    storage.save_snapshot(make_profile(steam_id), list(games))
+
+
+def test_achievement_summary_counts_only_games_still_owned():
+    hades, portal = make_game(1, "Hades", hours=40), make_game(2, "Portal", hours=8)
+    owns("me", hades, portal)
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=4, locked=6))
+    storage.save_achievements("me", 2, 480, make_achievements(2, unlocked=5))
+    assert storage.get_achievement_summary("me") == {"unlocked": 9, "total": 15, "games": 2, "perfect": 1, "checked": 2}
+    owns("me", hades)  # Portal was refunded
+    assert storage.get_achievement_summary("me") == {"unlocked": 4, "total": 10, "games": 1, "perfect": 0, "checked": 1}
+
+
+def test_a_game_without_achievements_is_remembered_but_not_counted():
+    owns("me", make_game(1, "Garry's Mod", hours=3))
+    storage.save_achievements("me", 1, 180, [])
+    assert storage.get_checked_minutes("me") == {1: 180}
+    assert storage.get_achievement_summary("me") == {"unlocked": 0, "total": 0, "games": 0, "perfect": 0, "checked": 1}
+
+
+def test_a_new_check_replaces_the_old_unlocks_and_keeps_known_icons():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.save_achievements("me", 1, 100, make_achievements(1, unlocked=1, locked=2))
+    storage.save_achievement_icons(1, {"A1_0": "https://example.test/a.jpg"})
+    storage.save_achievements("me", 1, 200, make_achievements(1, unlocked=3))
+    recent = storage.get_recent_unlocks("me", 10)
+    assert [row["api_name"] for row in recent] == ["A1_2", "A1_1", "A1_0"]  # newest first
+    assert recent[-1]["icon"] == "https://example.test/a.jpg" and recent[0]["game"] == "Hades"
+
+
+def test_unlocks_without_a_date_are_left_out_of_the_latest_list():
+    owns("me", make_game(1, "Hades", hours=40))
+    achievements = make_achievements(1, unlocked=2)
+    achievements[1]["unlocked_at"] = None
+    storage.save_achievements("me", 1, 100, achievements)
+    assert [row["api_name"] for row in storage.get_recent_unlocks("me", 10)] == ["A1_0"]
+    assert storage.get_achievement_summary("me")["unlocked"] == 2  # still counted
+
+
+def test_nearly_done_lists_games_closest_to_finished():
+    owns("me", *(make_game(n, f"Game {n}", hours=5) for n in (1, 2, 3, 4)))
+    storage.save_achievements("me", 1, 300, make_achievements(1, unlocked=9, locked=1))   # 90%
+    storage.save_achievements("me", 2, 300, make_achievements(2, unlocked=4, locked=1))   # 80%
+    storage.save_achievements("me", 3, 300, make_achievements(3, unlocked=3, locked=7))   # 30%, too far
+    storage.save_achievements("me", 4, 300, make_achievements(4, unlocked=5))             # done already
+    assert [(g["name"], g["unlocked"], g["total"]) for g in storage.get_nearly_done("me", 80, 5)] == [
+        ("Game 1", 9, 10), ("Game 2", 4, 5)]
+
+
+def test_shared_achievements_only_compare_games_both_own():
+    owns("me", make_game(1, "Hades", hours=40), make_game(2, "Portal", hours=8))
+    owns("you", make_game(1, "Hades", hours=10), make_game(3, "Celeste", hours=8))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=10))
+    storage.save_achievements("me", 2, 480, make_achievements(2, unlocked=5))
+    storage.save_achievements("you", 1, 600, make_achievements(1, unlocked=4, locked=6))
+    storage.save_achievements("you", 3, 480, make_achievements(3, unlocked=7))
+    assert storage.get_shared_achievements("me", "you") == {
+        "games": 1, "my_unlocked": 10, "their_unlocked": 4, "my_perfect": 1, "their_perfect": 0}

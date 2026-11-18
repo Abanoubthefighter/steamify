@@ -35,7 +35,7 @@ def isolated(tmp_path, monkeypatch):
     storage.init_db()
 
 
-def make_game(app_id, name, hours=0.0, recent_hours=0.0, last_played=None):
+def make_game(app_id, name, hours=0.0, recent_hours=0.0, last_played=None, has_stats=False):
     """Build a game dict the way api.get_owned_games would return it."""
     return {
         "app_id": app_id,
@@ -44,7 +44,22 @@ def make_game(app_id, name, hours=0.0, recent_hours=0.0, last_played=None):
         "minutes": int(hours * 60),
         "minutes_2weeks": int(recent_hours * 60),
         "last_played": last_played,
+        "has_stats": has_stats,
     }
+
+
+def make_achievements(app_id, unlocked, locked=0, first_unlock=1_700_000_000):
+    """A game's achievements the way api.get_achievements returns them: `unlocked` done, `locked` not."""
+    done = [
+        {"api_name": f"A{app_id}_{n}", "name": f"Done {n}", "description": "", "achieved": True,
+         "unlocked_at": first_unlock + n * 3600}
+        for n in range(unlocked)
+    ]
+    todo = [
+        {"api_name": f"B{app_id}_{n}", "name": f"Todo {n}", "description": "", "achieved": False, "unlocked_at": None}
+        for n in range(locked)
+    ]
+    return done + todo
 
 
 def make_profile(steam_id="76561198000000001", name="tester"):

@@ -10,6 +10,7 @@ import app as app_module
 import config
 import demo
 import storage
+import sync
 from conftest import FAKE_KEY, PNG, WEBP, make_game, make_profile
 
 ME = "76561198000000001"
@@ -135,8 +136,9 @@ def test_real_games_link_to_their_art_and_store_page(client):
 
 def test_scan_streams_progress_then_points_at_the_dashboard(client, steam):
     events = scan(client, player="me")
-    assert [event["step"] for event in events[:-1]] == [1, 2, 3, 4]
-    assert all(event["steps"] == 4 for event in events[:-1])
+    steps = len(sync.STEPS)
+    assert [event["step"] for event in events[:-1]] == list(range(1, steps + 1))
+    assert all(event["steps"] == steps for event in events[:-1])
     assert events[-1] == {"done": True, "gained": 0, "url": f"/player/{ME}"}
 
     assert client.get(f"/player/{ME}").status_code == 200
@@ -156,7 +158,7 @@ def test_scan_with_nothing_typed(client):
 
 def test_a_private_friend_does_not_block_the_players_own_dashboard(client, steam):
     events = scan(client, player="me", friend="friend")
-    assert events[4]["label"].startswith("Friend: ")
+    assert events[len(sync.STEPS)]["label"].startswith("Friend: ")
     assert events[-1]["error"]["code"] == "private"
     assert events[-1]["url"] == f"/player/{ME}"
 
@@ -164,7 +166,7 @@ def test_a_private_friend_does_not_block_the_players_own_dashboard(client, steam
 def test_the_demo_player_can_be_synced_without_a_key(client, monkeypatch):
     monkeypatch.setattr(config, "STEAM_API_KEY", "")
     events = scan(client, player=demo.PLAYER_ID, friend=demo.FRIEND_ID, force="1")
-    assert len(events) == 9  # two players, four steps each, then the result
+    assert len(events) == 2 * len(sync.STEPS) + 1  # two players, every step each, then the result
     assert events[-1]["url"] == f"{DEMO_PAGE}?vs={demo.FRIEND_ID}"
 
 
@@ -330,3 +332,13 @@ def test_reset_keeps_the_pictures(client):
 def test_the_hills_drawing_is_on_every_page_and_in_its_preview(client):
     for page in (client.get(DEMO_PAGE).text, client.get("/player/nobody").text):
         assert page.count('class="wallpaper__art art--hills"') == 2  # the desktop + the preview in wallpaper.exe
+
+
+def test_achievement_progress_shows_up_in_the_scan_stream(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [
+        make_game(1, "Hades", hours=5, has_stats=True), make_game(2, "Celeste", hours=2, has_stats=True)])
+    monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])
+    events = scan(client, player="me")
+    last_step = len(sync.STEPS)
+    labels = [event["label"] for event in events if event.get("step") == last_step]
+    assert labels == ["Checking achievements", "Checking achievements 1/2", "Checking achievements 2/2"]
