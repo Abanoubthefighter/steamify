@@ -21,7 +21,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
 - **Lives in the tray**, like Steam or Discord. Closing the window hides it next to the clock instead of quitting (the first time, Windows shows a short notice saying so). Click the icon to bring the window back; right-click it, or use Start > Shut down, to quit. Prefer the old way? Untick "Keep running in the tray" in Start > Settings.
 - **Starts with Windows, if you want it to.** Tick "Start with Windows, in the tray" in Start > Settings and the app starts hidden next to the clock when you log in, so the hourly sync runs without you opening anything. It's off until you turn it on, and only the installed app offers it.
-- **Badges for keeping it running**, a retro-tech ladder: Dial-up after 6 hours, then Floppy (12), CD-ROM (25), DVD (50) and Hard drive (75). The app counts the time it's open, in the window or in the tray, and time the computer spends asleep doesn't count. Your badge sits next to the clock; click it for badges.exe and the whole ladder. A new one gets a popup (and a Windows notice if the app is in the tray).
+- **Badges for keeping it running**, a retro-tech ladder: Dial-up after 6 hours, then Floppy (12), CD-ROM (25), DVD (50), Hard drive (75) and RAM stick (150). The app counts the time it's open, in the window or in the tray, and time the computer spends asleep doesn't count. They show in profile.exe and next to the clock; click either for badges.exe and the whole ladder. A new one gets a popup (and a Windows notice if the app is in the tray).
 - **Syncs by itself.** While the app is open, in the window or in the tray, it syncs every saved player about once an hour, so the playtime history fills in without you remembering to open it. Right-click the tray icon for Sync now. sync.exe says when the last background sync ran, and if it brought new numbers while you were looking, a "New data" button shows up in the taskbar. You can switch it off in Start > Settings.
 
 [Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png) · [badges.exe](docs/badges.png)
@@ -101,7 +101,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         301 tests; none can reach Steam or the real registry
+tests/         302 tests; none can reach Steam or the real registry
 ```
 
 A few decisions worth explaining:
