@@ -223,6 +223,21 @@ def trophy_rows(steam_id: str):
     return render_template("partials/trophy_rows.html", trophies=page)
 
 
+@app.get("/player/<steam_id>/trophies/<int(signed=True):app_id>")
+def trophy_game(steam_id: str, app_id: int):
+    """One game's achievements, locked ones included: what a row in trophies.exe opens."""
+    owned = {game["app_id"]: game for game in storage.get_achievement_games(steam_id)}
+    game = owned.get(app_id) or abort(404)
+    sync.fetch_icons(app_id)  # asks Steam only if some icons are still missing
+    achievements = storage.get_game_achievements(steam_id, app_id)
+    return render_template(
+        "partials/trophy_game.html",
+        game={**game, "percent": stats.completion(game)},
+        unlocked=[item for item in achievements if item["achieved"]],
+        locked=[item for item in achievements if not item["achieved"]],
+    )
+
+
 def _trophy_page(games: list[dict], args) -> dict:
     """Sort and filter trophies.exe's game list the way the request asked for."""
     order = args.get("sort", stats.DEFAULT_TROPHY_ORDER)

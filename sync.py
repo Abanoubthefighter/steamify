@@ -167,10 +167,22 @@ def fetch_missing_icons(steam_id: str) -> None:
     if rarest:
         shown.append(rarest)
     for app_id in {unlock["app_id"] for unlock in shown if not unlock["icon"]}:
-        try:
-            storage.save_achievement_icons(app_id, api.get_achievement_icons(app_id))
-        except api.SteamError:
-            continue
+        fetch_icons(app_id)
+
+
+def fetch_icons(app_id: int) -> None:
+    """Fetch one game's achievement icons, unless they're all saved already.
+
+    Used during a scan (above) and when a game is opened in trophies.exe.
+    Never raises: without its icon an achievement just shows a letter.
+    Demo games have made-up negative IDs, so Steam is never asked about those.
+    """
+    if app_id <= 0 or not config.STEAM_API_KEY or not storage.is_missing_icons(app_id):
+        return
+    try:
+        storage.save_achievement_icons(app_id, api.get_achievement_icons(app_id))
+    except api.SteamError:
+        pass
 
 
 def _a_few_at_a_time(ask, items: list, workers: int | None = None):

@@ -1,5 +1,6 @@
 // trophies.exe: every game with achievements, opened from "View all games"
-// in achievements.exe.
+// in achievements.exe. Clicking a game opens a second window on top with
+// all of that game's achievements, locked ones included.
 //
 // Like library.exe, sorting and searching happen in Python (stats.py). This
 // file only asks the server for the rows again and swaps the new HTML in.
@@ -17,7 +18,19 @@ export function initTrophies() {
 
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-open-trophies]")) openTrophies(base);
+    const game = event.target.closest("[data-trophy-game]");
+    if (game) openGame(base, game.dataset.trophyGame);
   });
+}
+
+/** One game's achievements, in a window on top of trophies.exe. */
+async function openGame(base, appId) {
+  try {
+    const content = await fetchPart(`${base}/trophies/${appId}`);
+    openPopup({ title: content.dataset.title, content, color: "sand", big: true });
+  } catch {
+    showMessage({ heading: "Can't open that", message: "This game's achievements didn't load. Try again." });
+  }
 }
 
 /** Fetch a server-rendered piece of HTML and return its first element. */

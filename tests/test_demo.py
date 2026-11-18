@@ -94,3 +94,13 @@ def test_demo_players_get_made_up_achievements():
     assert storage.get_recent_unlocks(demo.PLAYER_ID, 3)
     assert storage.get_shared_achievements(demo.PLAYER_ID, demo.FRIEND_ID)["games"] > 0
     assert storage.get_achievement_coverage(demo.PLAYER_ID)["waiting"] == 0  # every played game "checked"
+
+
+def test_both_demo_players_agree_on_how_many_achievements_a_game_has():
+    demo.install(force=True)
+    mine = {game["app_id"]: game["total"] for game in storage.get_achievement_games(demo.PLAYER_ID)}
+    theirs = {game["app_id"]: game["total"] for game in storage.get_achievement_games(demo.FRIEND_ID)}
+    shared = mine.keys() & theirs.keys()
+    assert shared and all(mine[app_id] == theirs[app_id] for app_id in shared)
+    for app_id in shared:  # and the game's page lists exactly that many
+        assert len(storage.get_game_achievements(demo.PLAYER_ID, app_id)) == mine[app_id]

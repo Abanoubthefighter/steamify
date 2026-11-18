@@ -507,3 +507,28 @@ def test_trophy_rows_can_be_sorted_and_searched(client):
 
 def test_trophies_for_an_unknown_player_is_not_found(client):
     assert client.get("/player/76561190000000000/trophies").status_code == 404
+
+
+def test_a_games_page_lists_unlocked_then_locked_achievements(client):
+    game = next(game for game in storage.get_achievement_games(demo.PLAYER_ID) if 0 < game["unlocked"] < game["total"])
+    page = client.get(f"{DEMO_PAGE}/trophies/{game['app_id']}").text
+    assert f"Unlocked ({game['unlocked']})" in page
+    assert f"Still to get ({game['total'] - game['unlocked']})" in page
+    assert page.count("<li class=\"achievement") == game["total"]  # every one, locked or not
+
+
+def test_a_game_without_achievements_has_no_page(client):
+    assert client.get(f"{DEMO_PAGE}/trophies/123456").status_code == 404
+
+
+def test_opening_a_real_game_fetches_its_missing_icons_once(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [make_game(1, "Hades", hours=40, has_stats=True)])
+    monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: make_achievements(1, unlocked=2, locked=1))
+    scan(client, player="me")
+    asked = []
+    icons = {"A1_0": "https://example.test/0.jpg", "A1_1": "https://example.test/1.jpg", "B1_0": "https://example.test/b.jpg"}
+    monkeypatch.setattr(api, "get_achievement_icons", lambda app_id: asked.append(app_id) or icons)
+    page = client.get(f"/player/{ME}/trophies/1").text
+    assert "https://example.test/b.jpg" in page
+    client.get(f"/player/{ME}/trophies/1")
+    assert asked == [1]  # all saved the first time, so Steam isn't asked again

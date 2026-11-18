@@ -288,3 +288,20 @@ def test_unlock_counts_by_month_and_year():
     ]
     assert storage.get_unlock_counts("me", "year") == [{"bucket": "2025", "unlocks": 1}, {"bucket": "2026", "unlocks": 2}]
     assert storage.get_unlock_counts("me", "month", since="2026-01") == [{"bucket": "2026-01", "unlocks": 2}]
+
+
+def test_achievements_a_game_no_longer_has_are_dropped():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.save_achievements("me", 1, 100, make_achievements(1, unlocked=1, locked=3))
+    storage.save_achievements("me", 1, 200, make_achievements(1, unlocked=1, locked=1))  # the game lost two
+    assert len(storage.get_game_achievements("me", 1)) == 2
+    storage.save_achievements("me", 1, 300, [])  # "no stats" says nothing about the list, so it's kept
+    assert len(storage.get_game_achievements("me", 1)) == 2
+
+
+def test_missing_icons():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.save_achievements("me", 1, 100, make_achievements(1, unlocked=2))
+    assert storage.is_missing_icons(1)
+    storage.save_achievement_icons(1, {"A1_0": "https://example.test/0.jpg", "A1_1": "https://example.test/1.jpg"})
+    assert not storage.is_missing_icons(1)

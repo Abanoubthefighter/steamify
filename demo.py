@@ -104,7 +104,8 @@ ACHIEVEMENT_SEED = SEED + 1
 # Bump this when the made-up data changes shape. A demo saved by an older
 # version is then rebuilt at the next start instead of the next day.
 # 2: games without achievements are saved as checked (so nothing is "still to check").
-DATA_VERSION = "2"
+# 3: both demo players agree on how many achievements each game has.
+DATA_VERSION = "3"
 
 
 def is_demo(steam_id: str) -> bool:
@@ -253,10 +254,10 @@ def _invent_achievements(rng: random.Random, games: list[dict], since: float) ->
     for game in games:
         if not game["minutes"]:
             continue
-        if rng.random() < 0.25:
+        total = _achievement_count(game["app_id"])
+        if not total:
             invented[game["app_id"]] = []  # checked, and it has none
             continue
-        total = rng.randint(12, 60)
         done = round(total * min(1.0, game["minutes"] / 60 / rng.uniform(15, 120)))
         # A favourite with 150 hours or more is finished. Other well-played games
         # often stop just short: those last few achievements are always the hard ones.
@@ -279,6 +280,16 @@ def _invent_achievements(rng: random.Random, games: list[dict], since: float) ->
             for n in range(total)
         ]
     return invented
+
+
+def _achievement_count(app_id: int) -> int:
+    """How many achievements a demo game has: none for about one game in four, like on real Steam.
+
+    Worked out from the game alone, so both demo players agree on it, the way
+    every owner of a real game sees the same list.
+    """
+    game_rng = random.Random(f"{ACHIEVEMENT_SEED}/{app_id}")
+    return 0 if game_rng.random() < 0.25 else game_rng.randint(12, 60)
 
 
 def _invent_rarity(rng: random.Random, app_ids: list[int]) -> list[tuple[int, dict[str, float]]]:

@@ -1415,6 +1415,121 @@ li:last-child > .row {
   text-align: right;
 }
 
+/* One game's achievements, opened from a row. Same idea as the list above:
+   the lists scroll, the name and the Back button stay in view. */
+.trophy-game {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 0;
+}
+
+.trophy-game__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.trophy-game__name {
+  font: 600 var(--text-lg) / 1.2 var(--font-ui);
+}
+
+.trophy-game__count {
+  font: 500 var(--text-sm) var(--font-ui);
+  white-space: nowrap;
+}
+
+.trophy-game__lists {
+  flex: 1 1 auto;
+  min-height: 120px;
+  max-height: 520px;
+  overflow-y: auto;
+  background: var(--cream);
+  border: var(--line-thin) solid var(--ink);
+}
+
+.trophy-game__label {
+  margin: 0;
+  padding: 8px 12px;
+}
+
+h4.trophy-game__label {
+  position: sticky; /* stays at the top while its list scrolls under it */
+  top: 0;
+  z-index: 1;
+  background: var(--lilac);
+  border-bottom: var(--line-thin) solid var(--ink);
+}
+
+.achievements-list + h4.trophy-game__label {
+  border-top: var(--line-thin) solid var(--ink);
+}
+
+.achievement {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: 8px 12px;
+  border-bottom: 1.5px dashed var(--ink);
+}
+
+.achievement:last-child {
+  border-bottom: 0;
+}
+
+.achievement__icon {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--ink);
+}
+
+.achievement__icon--letter {
+  display: grid;
+  place-items: center;
+  background: var(--lilac);
+  font: 600 var(--text-md) var(--font-ui);
+}
+
+.achievement__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.achievement__name {
+  font: 500 var(--text-sm) var(--font-ui);
+}
+
+.achievement__description,
+.achievement__facts {
+  font-size: var(--text-xs);
+}
+
+.achievement__facts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+/* Still to get: faded, and the icon in grey. "not yet" says it in words too. */
+.achievement--locked .achievement__icon {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.achievement--locked .achievement__icon--letter {
+  background: var(--paper);
+}
+
+.achievement--locked .achievement__name {
+  font-weight: 400;
+}
+
 /* "100%" after the name of a finished game. */
 .row__tag {
   margin-left: 4px;

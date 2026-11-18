@@ -358,6 +358,15 @@ def _write_achievements(db: sqlite3.Connection, steam_id: str, app_id: int, minu
         """,
         (steam_id, app_id, len(achievements), len(unlocked), minutes),
     )
+    # Steam always sends a game's full list, so anything not in it was removed
+    # from the game (or is left over from an older demo). An empty list is left
+    # alone: that's "this game has none", nothing to compare against.
+    if achievements:
+        names = [item["api_name"] for item in achievements]
+        db.execute(
+            f"DELETE FROM achievement_info WHERE app_id = ? AND api_name NOT IN ({', '.join('?' * len(names))})",
+            (app_id, *names),
+        )
     # Keep any icon or rarity already known; only the words can change.
     db.executemany(
         """
@@ -382,6 +391,13 @@ def save_achievement_icons(app_id: int, icons: dict[str, str]) -> None:
             "UPDATE achievement_info SET icon = ? WHERE app_id = ? AND api_name = ?",
             ((icon, app_id, api_name) for api_name, icon in icons.items()),
         )
+
+
+def is_missing_icons(app_id: int) -> bool:
+    """True if any of a game's known achievements has no icon address saved yet."""
+    with open_db() as db:
+        row = db.execute("SELECT 1 FROM achievement_info WHERE app_id = ? AND icon IS NULL LIMIT 1", (app_id,)).fetchone()
+    return row is not None
 
 
 def games_needing_rarity(steam_id: str, checked_before: float) -> list[int]:

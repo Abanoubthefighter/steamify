@@ -1,0 +1,56 @@
+{#
+  One game's achievements, opened from a row in trophies.exe and fetched on
+  its own (static/js/trophies.js). The unlocked ones come newest first, then
+  the ones still to get, the most common first: if most players have one,
+  it's probably the easiest to get next.
+#}
+{% macro achievement(item) %}
+<li class="achievement{{ ' achievement--locked' if not item.achieved }}">
+  {% if item.icon %}
+  <img class="achievement__icon" src="{{ item.icon }}" alt="" width="40" height="40" loading="lazy" data-hide-on-error>
+  {% else %}
+  <span class="achievement__icon achievement__icon--letter" aria-hidden="true">{{ item.name[:1] | upper }}</span>
+  {% endif %}
+  <span class="achievement__text">
+    <span class="achievement__name">{{ item.name }}</span>
+    {% if item.description %}<span class="achievement__description">{{ item.description }}</span>{% endif %}
+  </span>
+  <span class="achievement__facts">
+    {% if item.achieved %}
+    <span>{{ item.unlocked_at | ago if item.unlocked_at else "unlocked" }}</span>
+    {% else %}
+    <span>not yet</span>
+    {% endif %}
+    {% if item.percent is not none %}<span>{{ item.percent | share }} of players</span>{% endif %}
+  </span>
+</li>
+{% endmacro %}
+
+<div class="trophy-game" data-title="{{ game.name | filename }}.ach">
+  <div class="trophy-game__head">
+    <h3 class="trophy-game__name">{{ game.name }}</h3>
+    <span class="meter" style="--progress: {{ game.percent }}%" aria-hidden="true"></span>
+    <span class="trophy-game__count">{{ game.unlocked }} of {{ game.total }} · {{ game.percent }}%</span>
+  </div>
+
+  <div class="trophy-game__lists scroll">
+    {% if unlocked %}
+    <h4 class="label trophy-game__label">Unlocked ({{ unlocked | length }})</h4>
+    <ul class="achievements-list" role="list">
+      {% for item in unlocked %}{{ achievement(item) }}{% endfor %}
+    </ul>
+    {% endif %}
+    {% if locked %}
+    <h4 class="label trophy-game__label">Still to get ({{ locked | length }}){% if locked | length > 1 %}, the most common first{% endif %}</h4>
+    <ul class="achievements-list" role="list">
+      {% for item in locked %}{{ achievement(item) }}{% endfor %}
+    </ul>
+    {% elif unlocked %}
+    <p class="note trophy-game__label">Every single one. Nothing left to get here.</p>
+    {% endif %}
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn--small" type="button" data-action="close">Back</button>
+  </div>
+</div>
