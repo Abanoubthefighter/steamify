@@ -67,12 +67,14 @@
   --badge-floppy: var(--lilac);
   --badge-cdrom: var(--cream);
   --badge-dvd: var(--red);
-  --badge-harddrive: var(--night);  /* the last one is the dark one */
+  --badge-harddrive: #b7c3d0;     /* brushed metal: the only cool colour on the ladder */
+  --badge-ram: var(--green);      /* a circuit board */
   --badge-light: var(--cream);    /* labels, the shutter, the clear ring */
   --badge-accent: var(--lilac);   /* the handset, a disc's shine, the drive's read arm */
   --badge-dvd-shine: var(--sand); /* lilac on red would be hard to see */
   --badge-hot: var(--red);        /* a modem light */
   --badge-ok: var(--green);       /* the "on" lights */
+  --badge-gold: var(--sand);      /* the RAM stick's contacts */
   --badge-line: 3px;              /* outline thickness inside a badge (in a 64-unit drawing) */
 
   /* --- Wallpaper ------------------------------------------------------------

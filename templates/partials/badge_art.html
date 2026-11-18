@@ -1,9 +1,10 @@
 {#
-  The five badge drawings, one inline SVG each, so they stay sharp at any
+  The badge drawings, one inline SVG each, so they stay sharp at any
   size and take their colours from theme.css (--badge-*). The keys match
   config.BADGES. Outlines and fills come from classes in style.css:
   b-line (ink outline), b-main (the badge's own colour), b-light, b-accent,
-  b-hot, b-ok, b-ink.
+  b-hot, b-ok, b-gold, b-ink, b-paper, plus b-arm / b-arm-outline (the
+  drive's read arm) and b-fine (thin lines).
 
       {{ badge_art("floppy") }}               48 px
       {{ badge_art("cdrom", 24) }}            any size
@@ -44,17 +45,31 @@
   <circle class="b-line b-paper" cx="32" cy="32" r="4"/>
   <text class="b-label" x="32" y="52" text-anchor="middle">DVD</text>
   {% elif key == "harddrive" %}
-  {# An opened hard drive: the platter, the read arm, a light and four screws. #}
-  <rect class="b-line b-main" x="8" y="6" width="48" height="52" rx="4"/>
-  <circle class="b-line b-light" cx="30" cy="27" r="15"/>
-  <circle class="b-ink" cx="30" cy="27" r="3"/>
-  <path class="b-line b-arm" d="M48 50 L36 33" fill="none"/>
-  <circle class="b-line b-accent" cx="48" cy="50" r="4"/>
-  <circle class="b-line b-ok" cx="16" cy="50" r="2.5"/>
-  <circle class="b-light" cx="12" cy="10" r="1.5"/>
-  <circle class="b-light" cx="52" cy="10" r="1.5"/>
-  <circle class="b-light" cx="12" cy="54" r="1.5"/>
-  <circle class="b-light" cx="52" cy="54" r="1.5"/>
+  {# A hard drive with its lid off: the platter, the read arm on its pivot, a label and four screws. #}
+  <rect class="b-line b-main" x="7" y="5" width="50" height="54" rx="5"/>
+  <circle class="b-line b-light" cx="32" cy="26" r="17"/>
+  <circle class="b-line b-accent" cx="32" cy="26" r="6"/>
+  <circle class="b-ink" cx="32" cy="26" r="2"/>
+  <path class="b-arm-outline" d="M47 49 L37 32"/>
+  <path class="b-arm" d="M47 49 L37 32"/>
+  <circle class="b-line b-hot" cx="47" cy="49" r="5"/>
+  <rect class="b-line b-light" x="13" y="47" width="18" height="6" rx="1"/>
+  <circle class="b-line b-ok" cx="51" cy="12" r="2.2"/>
+  <circle class="b-ink" cx="12" cy="10" r="1.6"/>
+  <circle class="b-ink" cx="42" cy="10" r="1.6"/>
+  <circle class="b-ink" cx="12" cy="54" r="1.6"/>
+  <circle class="b-ink" cx="52" cy="54" r="1.6"/>
+  {% elif key == "ram" %}
+  {# A RAM stick: green board, four memory chips, gold contacts with the notch between them. #}
+  <path class="b-line b-main" d="M4 15 h56 v36 h-23 v-5 h-10 v5 h-23 z"/>
+  <rect class="b-ink" x="9" y="21" width="9" height="15" rx="1"/>
+  <rect class="b-ink" x="21" y="21" width="9" height="15" rx="1"/>
+  <rect class="b-ink" x="34" y="21" width="9" height="15" rx="1"/>
+  <rect class="b-ink" x="46" y="21" width="9" height="15" rx="1"/>
+  <rect class="b-line b-gold" x="8" y="42" width="21" height="6"/>
+  <rect class="b-line b-gold" x="35" y="42" width="21" height="6"/>
+  <path class="b-line b-fine" d="M13 42 v6 M18 42 v6 M23 42 v6 M40 42 v6 M45 42 v6 M50 42 v6" fill="none"/>
+  <circle class="b-light" cx="9" cy="19" r="1.5"/>
   {% endif %}
 </svg>
 {% endmacro %}

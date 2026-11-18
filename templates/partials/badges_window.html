@@ -33,7 +33,7 @@
   <p class="note">That's every badge there is. The app has run for longer than some marriages.</p>
   {% endif %}
 
-  <ol class="badge-ladder">
+  <ol class="badge-ladder" style="--steps: {{ badge.ladder | length }}">
     {% for step in badge.ladder %}
     <li class="badge-step{{ ' is-earned' if step.earned }}{{ ' is-next' if badge.next and step.key == badge.next.key }}">
       {{ badge_art(step.key, 48, locked=not step.earned) }}

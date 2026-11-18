@@ -2068,6 +2068,7 @@ h4.trophy-game__label {
 .badge-art--cdrom { --badge-main: var(--badge-cdrom); }
 .badge-art--dvd { --badge-main: var(--badge-dvd); --badge-accent: var(--badge-dvd-shine); }
 .badge-art--harddrive { --badge-main: var(--badge-harddrive); }
+.badge-art--ram { --badge-main: var(--badge-ram); }
 
 .badge-art .b-line {
   stroke: var(--ink);
@@ -2084,9 +2085,27 @@ h4.trophy-game__label {
 .badge-art .b-ink { fill: var(--ink); }
 .badge-art .b-paper { fill: var(--paper); }
 
+.badge-art .b-gold { fill: var(--badge-gold); }
+
+/* The drive's read arm: a thick ink line with a thinner red one on top, so it has an outline too. */
+.badge-art .b-arm-outline,
 .badge-art .b-arm {
-  stroke: var(--badge-accent);
-  stroke-width: calc(var(--badge-line) * 2);
+  fill: none;
+  stroke-linecap: round;
+}
+
+.badge-art .b-arm-outline {
+  stroke: var(--ink);
+  stroke-width: calc(var(--badge-line) * 2.7);
+}
+
+.badge-art .b-arm {
+  stroke: var(--badge-hot);
+  stroke-width: calc(var(--badge-line) * 1.2);
+}
+
+.badge-art .b-fine {
+  stroke-width: calc(var(--badge-line) / 2);
 }
 
 .badge-art .b-label {
@@ -2143,9 +2162,10 @@ h4.trophy-game__label {
   text-align: left;
 }
 
+/* One column per badge; the template sets --steps from config.BADGES. */
 .badge-ladder {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--steps, 5), minmax(0, 1fr));
   gap: var(--space-1);
   margin: 0;
   padding: 0;

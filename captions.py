@@ -150,6 +150,7 @@ BADGE_LINES = {
     "cdrom": "650 MB of dedication, and a free trial nobody asked for.",
     "dvd": "Double-sided devotion. Region free, too.",
     "harddrive": "The app lives here now. Apparently so do you.",
+    "ram": "It's not just stored any more, it's loaded. 150 hours and counting.",
 }
 
 

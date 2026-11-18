@@ -143,6 +143,7 @@ BADGES = [
     ("cdrom", "CD-ROM", 25),
     ("dvd", "DVD", 50),
     ("harddrive", "Hard drive", 75),
+    ("ram", "RAM stick", 150),
 ]
 RUNNING_TICK_SECONDS = 60   # how often running time is added up; also the most one tick can add (so sleep doesn't count)
 
