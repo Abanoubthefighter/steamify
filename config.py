@@ -37,6 +37,7 @@ def _user_data_dir() -> Path:
 DATA_DIR = _user_data_dir()
 ENV_FILE = DATA_DIR / ".env"
 DATABASE_PATH = DATA_DIR / "data" / "steam_stats.db"
+WALLPAPER_DIR = DATA_DIR / "data" / "wallpapers"  # the app's own copy of an imported picture
 
 load_dotenv(ENV_FILE)
 
@@ -87,6 +88,21 @@ BINGE_HOURS = 40        # this many hours in two weeks counts as a binge
 ABANDONED_DAYS = 365    # a favourite untouched for this long counts as abandoned
 FAVOURITES_COUNT = 10   # how far down the most-played list still counts as "a favourite"
 MAX_ALERTS = 5
+
+# --- Wallpaper (wallpaper.exe) -----------------------------------------------
+
+# The built-in patterns: key -> name shown in wallpaper.exe. Each key has a
+# .pattern--<key> rule in style.css that draws it (colours in theme.css).
+WALLPAPER_PATTERNS = {
+    "sunburst": "Sunburst",
+    "dots": "Halftone dots",
+    "checker": "Soft checker",
+    "plain": "Plain orange",
+}
+DEFAULT_WALLPAPER = "sunburst"
+WALLPAPER_MAX_MB = 25       # biggest picture that can be imported
+DEFAULT_WALLPAPER_DIM = 30  # percent the dim slider starts at
+WALLPAPER_DIM_MAX = 80      # percent; past this a picture is barely there
 
 # --- Desktop window ----------------------------------------------------------
 

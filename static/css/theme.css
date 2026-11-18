@@ -62,11 +62,17 @@
   --red-ink: #bf3510;    /* --red, deepened so small text stays readable on paper */
 
   /* --- Wallpaper ------------------------------------------------------------
-     A sunburst of thin rays over --bg. Keep --wallpaper-ink close to --bg so
-     the pattern stays in the background and the windows stay the focus.     */
-  --wallpaper-ink: #ef9744;      /* the darker rays */
-  --wallpaper-rays: 20;          /* how many darker rays go all the way round */
-  --wallpaper-center: 50% 100%;  /* where they start (across, down): behind the taskbar */
+     The built-in patterns are drawn over --bg. Keep their colours close to
+     --bg so the pattern stays in the background and the windows stay the
+     focus. wallpaper.exe picks which pattern is on.                         */
+  --wallpaper-ink: #ef9744;        /* sunburst rays and checker squares */
+  --wallpaper-dot-ink: #e8903e;    /* halftone dots: a touch darker, as they cover less */
+  --wallpaper-rays: 20;            /* sunburst: how many darker rays go all the way round */
+  --wallpaper-center: 50% 100%;    /* sunburst: where the rays start (across, down) */
+  --wallpaper-dot: 2px;            /* halftone: dot radius */
+  --wallpaper-dot-gap: 16px;       /* halftone: distance between dots */
+  --wallpaper-check: 24px;         /* checker: size of one square */
+  --wallpaper-dim-color: var(--ink);  /* what the dim slider darkens a picture towards */
 
   /* --- Type ---------------------------------------------------------------- */
   --font-ui: "Fredoka", "Segoe UI", sans-serif;          /* titles, buttons, numbers */

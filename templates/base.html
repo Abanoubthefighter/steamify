@@ -12,8 +12,15 @@
 </head>
 <body>
 
-  {# The wallpaper behind every window. Its pattern is drawn in style.css. #}
-  <div class="wallpaper" aria-hidden="true"></div>
+  {# The wallpaper behind every window: a pattern drawn in style.css, or the
+     user's own picture. wallpaper.exe changes it (static/js/wallpaper.js). #}
+  {% set wp = wallpaper() %}
+  <div class="wallpaper pattern--{{ wp.pattern }}" data-wallpaper data-dim="{{ wp.dim }}" aria-hidden="true"
+       style="--wallpaper-dim: {{ wp.dim / 100 }}">
+    {% if wp.picture_url %}
+    <img class="wallpaper__picture" src="{{ wp.picture_url }}" alt="" data-wallpaper-picture>
+    {% endif %}
+  </div>
 
   {% block desktop %}{% endblock %}
 

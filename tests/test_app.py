@@ -211,3 +211,36 @@ def test_posts_from_other_websites_are_refused(client):
 
 def test_requests_for_another_host_are_refused(client):
     assert client.get(DEMO_PAGE, headers={"Host": "evil.example"}).status_code == 403
+
+
+# --- Wallpaper ----------------------------------------------------------------
+
+
+def test_every_page_starts_with_the_default_wallpaper(client):
+    assert f'class="wallpaper pattern--{config.DEFAULT_WALLPAPER}"' in client.get(DEMO_PAGE).text
+    assert f'class="wallpaper pattern--{config.DEFAULT_WALLPAPER}"' in client.get("/player/nobody").text
+
+
+def test_picking_a_pattern_changes_the_page(client):
+    reply = client.post("/wallpaper", data={"pattern": "checker", "dim": "55"})
+    assert reply.status_code == 200
+    assert reply.json == {"pattern": "checker", "dim": 55, "picture_url": None}
+    page = client.get(DEMO_PAGE).text
+    assert 'class="wallpaper pattern--checker"' in page
+    assert "--wallpaper-dim: 0.55" in page
+
+
+def test_an_unknown_pattern_gets_a_popup_message(client):
+    reply = client.post("/wallpaper", data={"pattern": "rainbow"})
+    assert reply.status_code == 400
+    assert reply.json["title"] and reply.json["message"]
+
+
+def test_reset_brings_back_the_default(client):
+    client.post("/wallpaper", data={"pattern": "plain"})
+    assert client.post("/wallpaper/reset").json["pattern"] == config.DEFAULT_WALLPAPER
+
+
+def test_only_the_current_picture_is_served(client):
+    assert client.get("/wallpaper/picture/wallpaper-nope.png").status_code == 404
+    assert client.get("/wallpaper/picture/..%2Ftest.db").status_code == 404

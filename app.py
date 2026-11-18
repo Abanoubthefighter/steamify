@@ -10,7 +10,18 @@ desktop.py wraps the very same app in a native window.
 
 import json
 
-from flask import Flask, Response, abort, jsonify, redirect, render_template, request, stream_with_context, url_for
+from flask import (
+    Flask,
+    Response,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    stream_with_context,
+    url_for,
+)
 
 import api
 import captions
@@ -21,6 +32,7 @@ import formatting
 import stats
 import storage
 import sync
+import wallpaper
 
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
@@ -80,6 +92,21 @@ def template_globals() -> dict:
         "has_key": bool(config.STEAM_API_KEY),
         "key_page": config.STEAM_KEY_PAGE,
         "app_version": config.APP_VERSION,
+        # A function, not a value: only base.html calls it, so the small page
+        # fragments (library rows, game card) don't read the setting for nothing.
+        "wallpaper": wallpaper_state,
+        "wallpaper_patterns": config.WALLPAPER_PATTERNS,
+    }
+
+
+def wallpaper_state(choice: dict | None = None) -> dict:
+    """The wallpaper as the page and wallpaper.exe need it: pattern, dim level and picture address."""
+    choice = choice or wallpaper.current()
+    picture = choice["picture"]
+    return {
+        "pattern": choice["pattern"],
+        "dim": choice["dim"],
+        "picture_url": url_for("wallpaper_picture", name=picture) if picture else None,
     }
 
 
@@ -264,6 +291,37 @@ def save_key():
         return jsonify(error.as_dict()), 502
     config.save_api_key(key)
     return jsonify(ok=True)
+
+
+# --- Wallpaper (wallpaper.exe) ------------------------------------------------
+
+
+@app.post("/wallpaper")
+def change_wallpaper():
+    """Pick a pattern, a dim level, or both. Replies with the new wallpaper."""
+    try:
+        if "pattern" in request.form:
+            wallpaper.choose(request.form["pattern"])
+        if "dim" in request.form:
+            wallpaper.set_dim(request.form["dim"])
+    except wallpaper.WallpaperError as error:
+        return jsonify(error.as_dict()), 400
+    return jsonify(wallpaper_state())
+
+
+@app.post("/wallpaper/reset")
+def reset_wallpaper():
+    """Back to the default pattern. The imported copy is deleted; the original never is."""
+    return jsonify(wallpaper_state(wallpaper.reset()))
+
+
+@app.get("/wallpaper/picture/<name>")
+def wallpaper_picture(name: str):
+    """The imported picture. Only the current one is ever handed out."""
+    if name != wallpaper.current()["picture"]:
+        abort(404)
+    # Every import gets a new file name, so the browser may keep this one for good.
+    return send_from_directory(config.WALLPAPER_DIR, name, max_age=31_536_000)
 
 
 # --- Safety nets -------------------------------------------------------------

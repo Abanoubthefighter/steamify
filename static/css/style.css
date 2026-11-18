@@ -113,23 +113,78 @@ a {
 
 /* --- Wallpaper ----------------------------------------------------------- */
 
-/* A sunburst behind everything. It's fixed, so the windows scroll over it
-   while the rays stay put, like a real desktop.
-
-   A conic gradient changes colour as it goes round a point, like slices of
-   a pie. With hard stops (each colour starts exactly where the last one
-   ends) nothing fades: the slices are flat, alternating --wallpaper-ink and
-   --bg. Each ray and each gap is half of one 360deg / rays step.            */
+/* The layer behind everything. It's fixed, so the windows scroll over it
+   while the wallpaper stays put, like a real desktop. */
 .wallpaper {
-  --ray: calc(180deg / var(--wallpaper-rays));
   position: fixed;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
+  background: var(--bg);
+}
+
+/* The built-in patterns. Each is one class, used both on the wallpaper and
+   on the small previews in wallpaper.exe. Every pattern uses gradients with
+   hard stops (each colour starts exactly where the last one ends), so
+   nothing fades: the shapes are flat, just like everything else.
+
+   Sunburst: a conic gradient changes colour as it goes round a point, like
+   slices of a pie. Each ray and each gap is half of one 360deg / rays step. */
+.pattern--sunburst {
+  --ray: calc(180deg / var(--wallpaper-rays));
   background: repeating-conic-gradient(
     at var(--wallpaper-center),
     var(--wallpaper-ink) 0 var(--ray),
     var(--bg) 0 calc(var(--ray) * 2)
   );
+}
+
+/* Halftone: a grid of round dots, then the same grid again shifted by half
+   a step, so every other row sits in the gaps of the one above. */
+.pattern--dots {
+  --dot: radial-gradient(
+    circle,
+    var(--wallpaper-dot-ink) var(--wallpaper-dot),
+    transparent calc(var(--wallpaper-dot) + 0.5px)
+  );
+  background-color: var(--bg);
+  background-image: var(--dot), var(--dot);
+  background-size: var(--wallpaper-dot-gap) var(--wallpaper-dot-gap);
+  background-position:
+    0 0,
+    calc(var(--wallpaper-dot-gap) / 2) calc(var(--wallpaper-dot-gap) / 2);
+}
+
+/* Checker: four quarter slices per tile, two of each colour. */
+.pattern--checker {
+  background: repeating-conic-gradient(var(--wallpaper-ink) 0 25%, var(--bg) 0 50%) 0 0 /
+    calc(var(--wallpaper-check) * 2) calc(var(--wallpaper-check) * 2);
+}
+
+.pattern--plain {
+  background: var(--bg);
+}
+
+/* The user's own picture: scaled to cover the whole screen (cropped, never
+   stretched), with a see-through layer on top that the dim slider controls. */
+.wallpaper__picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wallpaper:not(.pattern--picture) .wallpaper__picture {
+  display: none; /* kept in the page, so switching back to it is instant */
+}
+
+.pattern--picture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--wallpaper-dim-color);
+  opacity: var(--wallpaper-dim, 0);
 }
 
 /* --- Desktop: the grid the windows sit in -------------------------------- */

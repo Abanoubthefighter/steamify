@@ -23,6 +23,7 @@ FAKE_KEY = "0123456789ABCDEF0123456789ABCDEF"
 def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATABASE_PATH", tmp_path / "test.db")
     monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(config, "WALLPAPER_DIR", tmp_path / "wallpapers")
     monkeypatch.setattr(config, "STEAM_API_KEY", FAKE_KEY)
     api._resolve_custom_name.cache_clear()
     storage.init_db()
