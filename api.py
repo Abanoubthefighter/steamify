@@ -87,6 +87,15 @@ class PrivateProfile(SteamError):
     )
 
 
+class PrivateAchievements(SteamError):
+    code = "private-achievements"
+    title = "Achievements are private"
+    message = (
+        "Steam won't share the achievements. In Steam, open Edit Profile, then Privacy "
+        "Settings, and set Game details to Public. Then scan again."
+    )
+
+
 class SteamTimeout(SteamError):
     code = "timeout"
     title = "Steam took too long"
@@ -111,18 +120,18 @@ class SteamDown(SteamError):
     message = "Steam answered with an error instead of data. That's on their side. Try again later."
 
 
-# --- The one function that actually goes online ------------------------------
+# --- The functions that actually go online -----------------------------------
 
 
-def _get(interface: str, method: str, version: int = 1, key: str | None = None, **params) -> dict:
-    """Call one Steam endpoint and return the "response" part of its JSON."""
+def _send(interface: str, method: str, version: int = 1, key: str | None = None, **params) -> requests.Response:
+    """Send one request to Steam and hand back its reply, whatever the status."""
     key = key or config.STEAM_API_KEY
     if not key:
         raise MissingKey()
 
     url = f"{config.STEAM_API_BASE}/{interface}/{method}/v{version}/"
     try:
-        reply = _session.get(url, params={"key": key, **params}, timeout=config.REQUEST_TIMEOUT)
+        return _session.get(url, params={"key": key, **params}, timeout=config.REQUEST_TIMEOUT)
     # "from None" matters here. The original error text contains the full URL,
     # API key included, and that must not end up in a log or a traceback.
     except requests.Timeout:
@@ -132,6 +141,9 @@ def _get(interface: str, method: str, version: int = 1, key: str | None = None, 
     except requests.RequestException:
         raise SteamError() from None
 
+
+def _check(reply: requests.Response) -> dict:
+    """The JSON of a reply that went well. Anything else becomes a SteamError."""
     if reply.status_code in (401, 403):
         raise BadKey()
     if reply.status_code == 429:
@@ -139,9 +151,14 @@ def _get(interface: str, method: str, version: int = 1, key: str | None = None, 
     if not reply.ok:
         raise SteamDown()
     try:
-        return reply.json().get("response", {})
+        return reply.json()
     except ValueError:  # the body wasn't JSON
         raise SteamDown() from None
+
+
+def _get(interface: str, method: str, version: int = 1, key: str | None = None, **params) -> dict:
+    """Call one Steam endpoint and return the "response" part of its JSON."""
+    return _check(_send(interface, method, version, key, **params)).get("response", {})
 
 
 # --- Finding a player --------------------------------------------------------
@@ -237,7 +254,70 @@ def _tidy_game(raw: dict) -> dict:
         "minutes": raw.get("playtime_forever", 0),
         "minutes_2weeks": raw.get("playtime_2weeks", 0),
         "last_played": raw.get("rtime_last_played") or None,
+        # Steam only sends this when it's true. Games without it have no
+        # achievements, so the achievement scan doesn't ask about them.
+        "has_stats": bool(raw.get("has_community_visible_stats")),
     }
+
+
+# --- Achievements ------------------------------------------------------------
+# Steam has no "all my achievements" call, only one per game. sync.py decides
+# which games are worth asking about; these functions just ask.
+
+
+def get_achievements(steam_id: str, app_id: int) -> list[dict]:
+    """Every achievement in one game for one player, unlocked or not.
+
+    An empty list means the game has no achievements. Steam answers that
+    with an error status, and a private profile too, so the error text in
+    the reply is read before the status code gets a say.
+    """
+    reply = _send("ISteamUserStats", "GetPlayerAchievements", steamid=steam_id, appid=app_id, l="english")
+    problem = _stats_error(reply)
+    if "no stats" in problem:
+        return []
+    if "not public" in problem:
+        raise PrivateAchievements()
+    stats = _check(reply).get("playerstats", {})
+    return [_tidy_achievement(raw) for raw in stats.get("achievements", []) if "apiname" in raw]
+
+
+def _stats_error(reply: requests.Response) -> str:
+    """The error text Steam puts inside a "playerstats" reply, in lower case, or ""."""
+    try:
+        return str(reply.json().get("playerstats", {}).get("error", "")).lower()
+    except (ValueError, AttributeError):  # not JSON, or not the shape we expected
+        return ""
+
+
+def _tidy_achievement(raw: dict) -> dict:
+    return {
+        "api_name": raw["apiname"],
+        "name": raw.get("name") or raw["apiname"],
+        "description": raw.get("description") or "",
+        "achieved": bool(raw.get("achieved")),
+        # Some very old unlocks have no date (Steam sends 0), so this can be None even when achieved.
+        "unlocked_at": raw.get("unlocktime") or None,
+    }
+
+
+def get_achievement_icons(app_id: int) -> dict[str, str]:
+    """The icon of every achievement in a game: {api name: picture address}."""
+    game = _check(_send("ISteamUserStats", "GetSchemaForGame", version=2, appid=app_id)).get("game", {})
+    listed = game.get("availableGameStats", {}).get("achievements", [])
+    return {item["name"]: item["icon"] for item in listed if item.get("name") and item.get("icon")}
+
+
+def get_global_percentages(app_id: int) -> dict[str, float]:
+    """What share of all players (in %) has each achievement in a game: {api name: percent}."""
+    answer = _check(_send("ISteamUserStats", "GetGlobalAchievementPercentagesForApp", version=2, gameid=app_id))
+    found = {}
+    for item in answer.get("achievementpercentages", {}).get("achievements", []):
+        try:
+            found[item["name"]] = float(item["percent"])  # Steam has sent this both as a number and as text
+        except (KeyError, TypeError, ValueError):
+            continue
+    return found
 
 
 # --- Checking a key before we save it ----------------------------------------

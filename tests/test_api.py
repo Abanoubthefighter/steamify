@@ -161,6 +161,7 @@ def test_owned_games_are_renamed_to_our_fields(monkeypatch):
                     "playtime_2weeks": 372,
                     "img_icon_url": "8dbc71957312bbd3baea65848b545be9eae2a355",
                     "rtime_last_played": 1731800000,
+                    "has_community_visible_stats": True,
                 },
                 {"appid": 620, "name": "Portal 2", "playtime_forever": 0, "img_icon_url": "", "rtime_last_played": 0},
             ],
@@ -174,8 +175,10 @@ def test_owned_games_are_renamed_to_our_fields(monkeypatch):
         "minutes": 48720,
         "minutes_2weeks": 372,
         "last_played": 1731800000,
+        "has_stats": True,
     }
     assert portal["minutes_2weeks"] == 0 and portal["last_played"] is None and portal["icon"] is None
+    assert portal["has_stats"] is False  # Steam leaves the flag out instead of sending false
 
 
 def test_private_library(monkeypatch):
@@ -202,3 +205,65 @@ def test_key_works_asks_steam(monkeypatch):
     assert api.key_works(FAKE_KEY) is True
     steam_says(monkeypatch, status=403)
     assert api.key_works(FAKE_KEY) is False
+
+
+# --- achievements ---
+
+
+def steam_replies(monkeypatch, body, status=200):
+    """Like steam_says, for the endpoints that don't wrap their answer in "response"."""
+    reply = Mock(status_code=status, ok=status < 400)
+    reply.json.return_value = body
+    get = Mock(return_value=reply)
+    monkeypatch.setattr(api._session, "get", get)
+    return get
+
+
+def test_achievements_are_renamed_to_our_fields(monkeypatch):
+    get = steam_replies(monkeypatch, {"playerstats": {"steamID": "76561197960287930", "gameName": "Hades", "success": True,
+        "achievements": [
+            {"apiname": "ESCAPE", "achieved": 1, "unlocktime": 1731800000, "name": "Is There No Escape?", "description": "Escape."},
+            {"apiname": "OLD_ONE", "achieved": 1, "unlocktime": 0, "name": "Before Records"},
+            {"apiname": "LOCKED", "achieved": 0, "unlocktime": 0},
+        ]}})
+    escape, old, locked = api.get_achievements("76561197960287930", 1145360)
+    assert escape == {"api_name": "ESCAPE", "name": "Is There No Escape?", "description": "Escape.",
+                      "achieved": True, "unlocked_at": 1731800000}
+    assert old["achieved"] and old["unlocked_at"] is None  # unlocked, but Steam doesn't know when
+    assert locked == {"api_name": "LOCKED", "name": "LOCKED", "description": "", "achieved": False, "unlocked_at": None}
+    assert get.call_args.kwargs["params"]["appid"] == 1145360
+
+
+def test_a_game_without_achievements_is_an_empty_list(monkeypatch):
+    steam_replies(monkeypatch, {"playerstats": {"error": "Requested app has no stats", "success": False}}, status=400)
+    assert api.get_achievements("76561197960287930", 220) == []
+
+
+def test_private_achievements_are_not_mistaken_for_a_bad_key(monkeypatch):
+    steam_replies(monkeypatch, {"playerstats": {"error": "Profile is not public", "success": False}}, status=403)
+    with pytest.raises(api.PrivateAchievements):
+        api.get_achievements("76561197960287930", 220)
+
+
+def test_a_real_bad_key_still_says_so_on_the_achievement_call(monkeypatch):
+    steam_replies(monkeypatch, "<html>Forbidden</html>", status=403)
+    with pytest.raises(api.BadKey):
+        api.get_achievements("76561197960287930", 220)
+
+
+def test_achievement_icons_come_from_the_schema(monkeypatch):
+    steam_replies(monkeypatch, {"game": {"gameName": "Hades", "availableGameStats": {"achievements": [
+        {"name": "ESCAPE", "displayName": "Is There No Escape?", "hidden": 0,
+         "icon": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1145360/escape.jpg"},
+        {"name": "NO_ICON", "displayName": "?"},
+    ]}}})
+    assert api.get_achievement_icons(1145360) == {
+        "ESCAPE": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1145360/escape.jpg",
+    }
+
+
+def test_global_percentages_accept_numbers_and_text(monkeypatch):
+    steam_replies(monkeypatch, {"achievementpercentages": {"achievements": [
+        {"name": "ESCAPE", "percent": 41.5}, {"name": "RARE", "percent": "0.8"}, {"name": "BROKEN", "percent": None},
+    ]}})
+    assert api.get_global_percentages(1145360) == {"ESCAPE": 41.5, "RARE": 0.8}
