@@ -1173,6 +1173,45 @@ li:last-child > .row {
   background: radial-gradient(var(--ink) 38%, var(--sand) 42%);
 }
 
+/* Tick boxes: the radio buttons' square cousins (settings.exe). */
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 0;
+  text-align: left;
+}
+
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: 500 var(--text-md) var(--font-ui);
+  cursor: pointer;
+}
+
+.checks input {
+  appearance: none;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background: var(--sand);
+  border: var(--line-thin) solid var(--ink);
+  cursor: pointer;
+}
+
+.checks input:checked {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 3px var(--sand);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
 /* --- versus.exe ---------------------------------------------------------- */
 
 .versus {

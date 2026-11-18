@@ -1,0 +1,22 @@
+{#
+  settings.exe: a floating window, opened from the start menu (System >
+  Settings). The settings themselves live in preferences.py; static/js/settings.js
+  ticks the boxes from the data below and saves each change straight away.
+#}
+<template data-popup="settings" data-title="settings.exe">
+  <form class="settings-form" data-settings-form>
+    <fieldset class="checks">
+      <legend class="label">When you close the window</legend>
+      <label><input type="checkbox" name="keep_running"> Keep running in the tray</label>
+      <p class="note">The app stays next to the clock. Click its icon to open it again, right-click it to quit.
+        Start &gt; Shut down always quits.</p>
+      {% if not desktop_app %}
+      <p class="note note--warning">This only does something in the desktop app, not in a browser tab.</p>
+      {% endif %}
+    </fieldset>
+    <div class="btn-row">
+      <button class="btn btn--small" type="button" data-action="close">Done</button>
+    </div>
+  </form>
+</template>
+<script type="application/json" id="settings-data">{{ preferences() | tojson }}</script>

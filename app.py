@@ -30,6 +30,7 @@ import charts
 import config
 import demo
 import formatting
+import preferences
 import stats
 import storage
 import sync
@@ -104,6 +105,9 @@ def template_globals() -> dict:
         "wallpaper_patterns": config.WALLPAPER_PATTERNS,
         "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
         "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
+        "preferences": preferences.current,  # a function, for the same reason as wallpaper
+        # desktop.py sets this. In a browser tab there's no tray, so settings.exe says so.
+        "desktop_app": app.config.get("DESKTOP_APP", False),
     }
 
 
@@ -430,6 +434,18 @@ def save_key():
 
 
 # --- Wallpaper (wallpaper.exe) ------------------------------------------------
+
+
+@app.post("/settings")
+def change_settings():
+    """settings.exe: turn a setting on ("1") or off ("0"). Replies with every setting."""
+    changes = {}
+    for key in preferences.defaults():
+        if key in request.form:
+            if request.form[key] not in ("0", "1"):
+                return jsonify(title="Can't save that", message="That setting only takes on or off."), 400
+            changes[key] = request.form[key] == "1"
+    return jsonify(preferences.update(**changes))
 
 
 @app.post("/wallpaper")

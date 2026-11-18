@@ -122,6 +122,12 @@ WALLPAPER_MAX_MB = 25       # biggest picture that can be imported
 DEFAULT_WALLPAPER_DIM = 30  # percent the dim slider starts at
 WALLPAPER_DIM_MAX = 80      # percent; past this a picture is barely there
 
+# --- Running in the tray (settings.exe) -----------------------------------------
+
+KEEP_RUNNING_DEFAULT = True  # the close button hides the window to the tray, like Steam or Discord
+# The one-time Windows notice the first time the window hides.
+TRAY_NOTICE = "Still running down here, next to the clock. Right-click the icon to quit."
+
 # --- Desktop window ----------------------------------------------------------
 
 WINDOW_TITLE = APP_NAME

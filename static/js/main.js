@@ -9,6 +9,7 @@ import { initCharts } from "./charts.js";
 import { initWallpaper } from "./wallpaper.js";
 import { initPlayers } from "./players.js";
 import { initTrophies } from "./trophies.js";
+import { initSettings } from "./settings.js";
 
 initDesktop();
 initAlerts();
@@ -18,3 +19,4 @@ initCharts();
 initWallpaper();
 initPlayers();
 initTrophies();
+initSettings();
