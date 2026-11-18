@@ -8,7 +8,10 @@ import storage
 
 
 def test_defaults_come_from_config():
-    assert preferences.current() == {"keep_running": config.KEEP_RUNNING_DEFAULT}
+    assert preferences.current() == {
+        "keep_running": config.KEEP_RUNNING_DEFAULT,
+        "background_sync": config.BACKGROUND_SYNC_DEFAULT,
+    }
 
 
 def test_a_change_is_saved():

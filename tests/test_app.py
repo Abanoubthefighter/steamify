@@ -544,8 +544,9 @@ def test_settings_exe_is_in_the_start_menu_with_the_saved_settings(client):
 
 
 def test_a_setting_can_be_switched_off_and_on(client):
-    assert client.post("/settings", data={"keep_running": "0"}).get_json() == {"keep_running": False}
-    assert client.post("/settings", data={"keep_running": "1"}).get_json() == {"keep_running": True}
+    assert client.post("/settings", data={"keep_running": "0"}).get_json()["keep_running"] is False
+    assert client.post("/settings", data={"keep_running": "1"}).get_json()["keep_running"] is True
+    assert client.post("/settings", data={"background_sync": "0"}).get_json()["background_sync"] is False
 
 
 def test_a_setting_only_takes_on_or_off(client):

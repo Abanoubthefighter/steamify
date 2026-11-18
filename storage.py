@@ -237,6 +237,15 @@ def list_players(limit: int) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def players_synced_before(timestamp: float) -> list[str]:
+    """Steam IDs of the players last scanned before this moment, the longest ago first."""
+    with open_db() as db:
+        rows = db.execute(
+            "SELECT steam_id FROM players WHERE synced_at < ? ORDER BY synced_at", (int(timestamp),)
+        ).fetchall()
+    return [row["steam_id"] for row in rows]
+
+
 def forget_player(steam_id: str) -> None:
     """Delete a player. Their library, history and achievements go with them (ON DELETE CASCADE)."""
     with open_db() as db:

@@ -15,11 +15,14 @@ NOTICE_SHOWN = "tray_notice_shown"  # set once the "still running" notice has be
 
 
 def defaults() -> dict:
-    return {"keep_running": config.KEEP_RUNNING_DEFAULT}
+    return {
+        "keep_running": config.KEEP_RUNNING_DEFAULT,
+        "background_sync": config.BACKGROUND_SYNC_DEFAULT,
+    }
 
 
 def current() -> dict:
-    """Every setting, saved value or default: {"keep_running": True}."""
+    """Every setting, saved value or default: {"keep_running": True, "background_sync": True}."""
     saved = _load()
     return {key: saved[key] if isinstance(saved.get(key), bool) else default for key, default in defaults().items()}
 
@@ -42,6 +45,11 @@ def update(**changes: bool) -> dict:
 def keep_running() -> bool:
     """True if closing the window should only hide it to the tray."""
     return current()["keep_running"]
+
+
+def background_sync() -> bool:
+    """True if the app should sync saved players on its own while it's open."""
+    return current()["background_sync"]
 
 
 def first_time_hidden() -> bool:

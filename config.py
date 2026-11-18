@@ -122,11 +122,15 @@ WALLPAPER_MAX_MB = 25       # biggest picture that can be imported
 DEFAULT_WALLPAPER_DIM = 30  # percent the dim slider starts at
 WALLPAPER_DIM_MAX = 80      # percent; past this a picture is barely there
 
-# --- Running in the tray (settings.exe) -----------------------------------------
+# --- Running in the tray, syncing in the background (settings.exe) --------------
 
 KEEP_RUNNING_DEFAULT = True  # the close button hides the window to the tray, like Steam or Discord
 # The one-time Windows notice the first time the window hides.
 TRAY_NOTICE = "Still running down here, next to the clock. Right-click the icon to quit."
+
+BACKGROUND_SYNC_DEFAULT = True  # sync every saved player now and then while the app is open
+BACKGROUND_SYNC_MINUTES = 60    # how often each player is synced (in the window or in the tray)
+BACKGROUND_CHECK_MINUTES = 5    # how often the app looks whether someone is due
 
 # --- Desktop window ----------------------------------------------------------
 
