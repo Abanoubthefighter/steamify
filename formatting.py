@@ -35,6 +35,15 @@ def number(count: int) -> str:
     return f"{count:,}"
 
 
+def share(percent: float) -> str:
+    """A share of players: 0.8%, 4%, 61%. Below 10 one decimal is worth showing."""
+    if percent < 0.1:
+        return "under 0.1%"
+    if percent < 10:
+        return f"{percent:.1f}%".replace(".0%", "%")
+    return f"{round(percent)}%"
+
+
 def plural(count: int, word: str) -> str:
     """1 game, 42 games. Only for words that take a plain "s"."""
     return f"{count:,} {word}" if count == 1 else f"{count:,} {word}s"

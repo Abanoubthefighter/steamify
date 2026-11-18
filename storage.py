@@ -88,6 +88,13 @@ CREATE TABLE IF NOT EXISTS achievement_info (
     PRIMARY KEY (app_id, api_name)
 ) WITHOUT ROWID;
 
+-- When each game's rarity numbers (achievement_info.percent) were last
+-- fetched. They barely move, so they're only fetched again after a while.
+CREATE TABLE IF NOT EXISTS rarity_checked (
+    app_id      INTEGER PRIMARY KEY,
+    checked_at  INTEGER NOT NULL
+);
+
 -- Small things to remember between runs, like who was on screen last.
 CREATE TABLE IF NOT EXISTS settings (
     key    TEXT PRIMARY KEY,
@@ -367,6 +374,59 @@ def save_achievement_icons(app_id: int, icons: dict[str, str]) -> None:
             "UPDATE achievement_info SET icon = ? WHERE app_id = ? AND api_name = ?",
             ((icon, app_id, api_name) for api_name, icon in icons.items()),
         )
+
+
+def games_needing_rarity(steam_id: str, checked_before: float) -> list[int]:
+    """Games where the player has unlocked something and the rarity is unknown or older than `checked_before`."""
+    with open_db() as db:
+        rows = db.execute(
+            """
+            SELECT DISTINCT u.app_id
+            FROM unlocks AS u
+            JOIN library AS l ON l.steam_id = u.steam_id AND l.app_id = u.app_id
+            LEFT JOIN rarity_checked AS r ON r.app_id = u.app_id
+            WHERE u.steam_id = ? AND (r.checked_at IS NULL OR r.checked_at < ?)
+            """,
+            (steam_id, int(checked_before)),
+        ).fetchall()
+    return [row[0] for row in rows]
+
+
+def save_rarity(checked: list[tuple[int, dict[str, float]]], now: float | None = None) -> None:
+    """Save rarity for some games: [(app_id, {api name: percent of players}), ...]."""
+    now = int(now or time.time())
+    with open_db() as db:
+        for app_id, percents in checked:
+            db.executemany(
+                "UPDATE achievement_info SET percent = ? WHERE app_id = ? AND api_name = ?",
+                ((percent, app_id, api_name) for api_name, percent in percents.items()),
+            )
+            db.execute(
+                """
+                INSERT INTO rarity_checked (app_id, checked_at) VALUES (?, ?)
+                ON CONFLICT (app_id) DO UPDATE SET checked_at = excluded.checked_at
+                """,
+                (app_id, now),
+            )
+
+
+def get_rarest_unlock(steam_id: str) -> dict | None:
+    """The unlocked achievement the smallest share of players has, or None if no rarity is known yet."""
+    with open_db() as db:
+        row = db.execute(
+            """
+            SELECT u.app_id, u.api_name, i.name, i.description, i.icon, i.percent, g.name AS game
+            FROM unlocks AS u
+            JOIN achievement_info AS i ON i.app_id = u.app_id AND i.api_name = u.api_name
+            JOIN games AS g ON g.app_id = u.app_id
+            JOIN library AS l ON l.steam_id = u.steam_id AND l.app_id = u.app_id
+            WHERE u.steam_id = ? AND i.percent IS NOT NULL
+            ORDER BY i.percent, i.name
+            LIMIT 1
+            """,
+            (steam_id,),
+        ).fetchone()
+    return dict(row) if row else None
 
 
 def get_achievement_summary(steam_id: str) -> dict:

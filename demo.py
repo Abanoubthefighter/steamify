@@ -132,12 +132,15 @@ def install(force: bool = False) -> None:
     storage.save_snapshot(FRIEND, friend_games)
 
     unlock_rng = random.Random(ACHIEVEMENT_SEED)
+    with_achievements = set()
     for steam_id, owned in ((PLAYER_ID, games), (FRIEND_ID, friend_games)):
         minutes = {game["app_id"]: game["minutes"] for game in owned}
         invented = _invent_achievements(unlock_rng, owned, first_scan)
         storage.save_many_achievements(
             steam_id, [(app_id, minutes[app_id], achievements) for app_id, achievements in invented.items()]
         )
+        with_achievements.update(invented)
+    storage.save_rarity(_invent_rarity(unlock_rng, sorted(with_achievements)))
 
 
 def scan(query: str, force: bool = False):
@@ -264,6 +267,20 @@ def _invent_achievements(rng: random.Random, games: list[dict], since: float) ->
             for n in range(total)
         ]
     return invented
+
+
+def _invent_rarity(rng: random.Random, app_ids: list[int]) -> list[tuple[int, dict[str, float]]]:
+    """How many players have each made-up achievement: the first ones in a game are common, later ones rare.
+
+    Players unlock the early ones first (see _invent_achievements), so someone
+    deep into a game holds a properly rare one, like on real Steam.
+    """
+    rarity = []
+    for app_id in app_ids:
+        common = rng.uniform(55, 95)
+        fade = rng.uniform(0.86, 0.95)
+        rarity.append((app_id, {f"DEMO_{n}": max(0.1, round(common * fade**n, 1)) for n in range(60)}))
+    return rarity
 
 
 def _friend_library(rng: random.Random, games: list[dict]) -> list[dict]:

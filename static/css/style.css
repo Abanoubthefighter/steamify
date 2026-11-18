@@ -1286,7 +1286,8 @@ li:last-child > .row {
   border-top: var(--line-thin) dashed var(--ink);
 }
 
-.unlock:first-child {
+.unlock:first-child,
+.unlock--alone {
   border-top: 0;
 }
 
@@ -1314,9 +1315,13 @@ li:last-child > .row {
   font-size: var(--text-xs);
 }
 
+.nearly__count {
+  text-align: right;
+}
+
 .nearly__game {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px auto;
+  grid-template-columns: minmax(0, 1fr) 72px 4.5em; /* fixed widths, so the bars line up row to row */
   align-items: center;
   gap: var(--space-2);
   padding: 6px 0;

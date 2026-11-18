@@ -98,14 +98,21 @@ def achievements(steam, monkeypatch):
         return answer
 
     monkeypatch.setattr(api, "get_achievements", fake)
+    monkeypatch.setattr(api, "get_global_percentages", lambda app_id: rarity.get(app_id, {}))
+    monkeypatch.setattr(api, "get_achievement_icons", lambda app_id: icons_asked.append(app_id) or {})
     return asked, answers, library
+
+
+rarity = {}       # what the fake Steam says about rarity: {app_id: {api name: percent}}
+icons_asked = []  # games the fake Steam was asked for icons
 
 
 def test_only_played_games_with_achievements_are_checked(achievements):
     asked, _, _ = achievements
     events = list(sync.scan("tester"))
     assert sorted(asked) == [10, 40]
-    assert [event["detail"] for event in events if "detail" in event] == ["1/2", "2/2"]
+    progress = [event.get("label") or event.get("detail") for event in events[:-1]]
+    assert progress[-6:] == ["Checking achievements", "1/2", "2/2", "Checking how rare they are", "1/2", "2/2"]
     assert storage.get_achievement_summary(ME) == {"unlocked": 5, "total": 6, "games": 2, "perfect": 1, "checked": 2}
 
 
@@ -146,3 +153,31 @@ def test_games_to_check():
     games = [make_game(1, "a", hours=1, has_stats=True), make_game(2, "b", hours=2, has_stats=True)]
     assert sync.games_to_check(games, {1: 60, 2: 60}) == [games[1]]
     assert sync.games_to_check(games, {}) == games
+
+
+def test_rarity_is_fetched_for_games_with_unlocks_then_left_alone_for_a_week(achievements, monkeypatch):
+    asked_rarity = []
+    monkeypatch.setattr(api, "get_global_percentages", lambda app_id: asked_rarity.append(app_id) or {f"A{app_id}_0": 3.5})
+    list(sync.scan("tester"))
+    assert sorted(asked_rarity) == [10, 40]
+    assert storage.get_rarest_unlock(ME)["percent"] == 3.5
+
+    asked_rarity.clear()
+    list(sync.scan("tester", force=True))
+    assert asked_rarity == []  # still fresh
+
+    monkeypatch.setattr(sync.config, "RARITY_REFRESH_DAYS", -1)  # as if a week (and then some) went by
+    list(sync.scan("tester", force=True))
+    assert sorted(asked_rarity) == [10, 40]
+
+
+def test_icons_are_only_fetched_for_what_achievements_exe_shows(achievements, monkeypatch):
+    icons_asked.clear()
+    list(sync.scan("tester"))
+    assert sorted(set(icons_asked)) == [10, 40]  # the games in the latest-unlocks list
+    monkeypatch.setattr(api, "get_achievement_icons", lambda app_id: icons_asked.append(app_id) or {
+        f"A{app_id}_{n}": f"https://example.test/{app_id}/{n}.jpg" for n in range(5)})
+    list(sync.scan("tester", force=True))
+    icons_asked.clear()
+    list(sync.scan("tester", force=True))
+    assert icons_asked == []  # every shown unlock has its icon now

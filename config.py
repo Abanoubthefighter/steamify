@@ -95,6 +95,7 @@ ACHIEVEMENT_WORKERS = 4     # games asked about at the same time during a scan (
 NEARLY_DONE_PERCENT = 80    # "so close": at least this much of a game's achievements, but not all
 NEARLY_DONE_COUNT = 3       # games listed under "so close"
 RECENT_UNLOCKS_COUNT = 4    # latest unlocks listed
+RARITY_REFRESH_DAYS = 7     # how rare each achievement is barely changes, so it's fetched at most this often
 
 # --- Wallpaper (wallpaper.exe) -----------------------------------------------
 

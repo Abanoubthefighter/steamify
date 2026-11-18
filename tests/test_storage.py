@@ -212,3 +212,18 @@ def test_shared_achievements_only_compare_games_both_own():
     storage.save_achievements("you", 3, 480, make_achievements(3, unlocked=7))
     assert storage.get_shared_achievements("me", "you") == {
         "games": 1, "my_unlocked": 10, "their_unlocked": 4, "my_perfect": 1, "their_perfect": 0}
+
+
+def test_the_rarest_unlock_and_which_games_need_rarity():
+    owns("me", make_game(1, "Hades", hours=40), make_game(2, "Portal", hours=8), make_game(3, "Celeste", hours=1))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=2))
+    storage.save_achievements("me", 2, 480, make_achievements(2, unlocked=1, locked=1))
+    storage.save_achievements("me", 3, 60, make_achievements(3, unlocked=0, locked=4))
+    assert sorted(storage.games_needing_rarity("me", checked_before=10**10)) == [1, 2]  # Celeste: nothing unlocked
+    assert storage.get_rarest_unlock("me") is None
+
+    storage.save_rarity([(1, {"A1_0": 40.0, "A1_1": 2.5}), (2, {"A2_0": 9.0, "B2_0": 0.1})], now=1000)
+    rarest = storage.get_rarest_unlock("me")
+    assert (rarest["name"], rarest["game"], rarest["percent"]) == ("Done 1", "Hades", 2.5)  # B2_0 is rarer, but locked
+    assert storage.games_needing_rarity("me", checked_before=500) == []
+    assert sorted(storage.games_needing_rarity("me", checked_before=2000)) == [1, 2]

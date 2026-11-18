@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import api
 import config
 import storage
+from formatting import DAY
 
 # What the sync window says while each step runs.
 STEPS = (
@@ -14,10 +15,11 @@ STEPS = (
     "Downloading the library",
     "Saving today's snapshot",
     "Checking achievements",
+    "Checking how rare they are",
 )
 
-# Problems with one game's achievements that shouldn't stop the scan. The
-# game simply isn't marked as checked, so the next scan tries it again.
+# Problems with one game that shouldn't stop the scan. That game simply
+# isn't marked as checked, so the next scan tries it again.
 SKIPPABLE = (api.SteamTimeout, api.NoConnection, api.SteamDown)
 
 
@@ -57,8 +59,18 @@ def scan(query: str, force: bool = False):
     yield {"label": STEPS[4]}
     for done, todo in check_achievements(steam_id, games):
         yield {"detail": f"{done}/{todo}"}
+
+    yield {"label": STEPS[5]}
+    for done, todo in check_rarity(steam_id):
+        yield {"detail": f"{done}/{todo}"}
     fetch_missing_icons(steam_id)
+
     yield {"steam_id": steam_id, "gained": gained}
+
+
+# --- Achievements ------------------------------------------------------------
+# Steam has one call per game, so these steps choose carefully what to ask,
+# ask a few games at a time, and never fail the scan: achievements are extra.
 
 
 def games_to_check(games: list[dict], checked_minutes: dict[int, int]) -> list[dict]:
@@ -76,43 +88,77 @@ def games_to_check(games: list[dict], checked_minutes: dict[int, int]) -> list[d
 
 
 def check_achievements(steam_id: str, games: list[dict]):
-    """Ask Steam about the games from games_to_check, a few at a time.
-
-    Yields (done, todo) after each game. Achievements are extra, so trouble
-    here never fails the scan: a game that couldn't be checked is tried again
-    next time, and if Steam asks to slow down or the achievements are
-    private, the rest wait for the next scan.
-    """
+    """Ask Steam about the games from games_to_check. Yields (done, todo) after each game."""
     todo = games_to_check(games, storage.get_checked_minutes(steam_id))
-    if not todo:
-        return
-    pool = ThreadPoolExecutor(max_workers=config.ACHIEVEMENT_WORKERS)
-    try:
-        asked = {pool.submit(api.get_achievements, steam_id, game["app_id"]): game for game in todo}
-        for done, answer in enumerate(as_completed(asked), start=1):
-            game = asked[answer]
-            try:
-                # Saved here, on this thread, so only one thread ever writes to the database.
-                storage.save_achievements(steam_id, game["app_id"], game["minutes"], answer.result())
-            except SKIPPABLE:
-                pass
-            except (api.RateLimited, api.PrivateAchievements):
-                return
-            yield done, len(todo)
-    finally:
-        pool.shutdown(wait=True, cancel_futures=True)  # don't start games that haven't been asked about yet
+
+    def ask(game: dict) -> list[dict]:
+        return api.get_achievements(steam_id, game["app_id"])
+
+    for done, (game, answer) in enumerate(_a_few_at_a_time(ask, todo), start=1):
+        if isinstance(answer, (api.RateLimited, api.PrivateAchievements)):
+            return  # the rest wait for the next scan
+        if isinstance(answer, api.SteamError):
+            if not isinstance(answer, SKIPPABLE):
+                raise answer
+        else:
+            # Saved here, on this thread, so only one thread ever writes to the database.
+            storage.save_achievements(steam_id, game["app_id"], game["minutes"], answer)
+        yield done, len(todo)
+
+
+def check_rarity(steam_id: str):
+    """Fetch how rare each achievement is, for games with unlocks whose numbers are missing or old.
+
+    Yields (done, todo) after each game.
+    """
+    todo = storage.games_needing_rarity(steam_id, time.time() - config.RARITY_REFRESH_DAYS * DAY)
+    for done, (app_id, answer) in enumerate(_a_few_at_a_time(api.get_global_percentages, todo), start=1):
+        if isinstance(answer, api.RateLimited):
+            return
+        if isinstance(answer, api.SteamError):
+            if not isinstance(answer, SKIPPABLE):
+                raise answer
+        else:
+            storage.save_rarity([(app_id, answer)])
+        yield done, len(todo)
 
 
 def fetch_missing_icons(steam_id: str) -> None:
     """Icons for the achievements achievements.exe is about to show.
 
     Icons come from a separate call per game, so only the games in the
-    "latest unlocks" list are asked about, and only once. Missing icons
-    aren't worth failing over: the window shows a letter instead.
+    "latest unlocks" list (and the rarest unlock's game) are asked about,
+    and only until they have them. Missing icons aren't worth failing over:
+    the window shows a letter instead.
     """
-    unlocks = storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT)
-    for app_id in {unlock["app_id"] for unlock in unlocks if not unlock["icon"]}:
+    shown = storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT)
+    rarest = storage.get_rarest_unlock(steam_id)
+    if rarest:
+        shown.append(rarest)
+    for app_id in {unlock["app_id"] for unlock in shown if not unlock["icon"]}:
         try:
             storage.save_achievement_icons(app_id, api.get_achievement_icons(app_id))
         except api.SteamError:
             continue
+
+
+def _a_few_at_a_time(ask, items: list):
+    """Call ask(item) for every item, config.ACHIEVEMENT_WORKERS at once.
+
+    Yields (item, answer) in the order the answers come back. If Steam said
+    no, the answer is the SteamError, so the caller decides what it means.
+    Stopping early cancels the calls that haven't started yet.
+    """
+    if not items:
+        return
+    pool = ThreadPoolExecutor(max_workers=config.ACHIEVEMENT_WORKERS)
+    try:
+        asked = {pool.submit(ask, item): item for item in items}
+        for answer in as_completed(asked):
+            try:
+                result = answer.result()
+            except api.SteamError as error:
+                result = error
+            yield asked[answer], result
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)

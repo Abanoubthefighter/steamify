@@ -67,3 +67,8 @@ def test_dates():
 def test_number_gets_thousands_commas():
     assert formatting.number(1284) == "1,284"
     assert formatting.number(7) == "7"
+
+
+@pytest.mark.parametrize(("percent", "text"), [(61.4, "61%"), (12.5, "12%"), (4.0, "4%"), (0.8, "0.8%"), (0.04, "under 0.1%")])
+def test_share_of_players(percent, text):
+    assert formatting.share(percent) == text

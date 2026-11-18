@@ -79,6 +79,7 @@ app.jinja_env.filters.update(
     ago=formatting.time_ago,
     plural=formatting.plural,
     number=formatting.number,
+    share=formatting.share,
     last_played=formatting.last_played,
     long_date=formatting.long_date,
     year=formatting.year,
@@ -264,6 +265,7 @@ def _achievements(steam_id: str) -> dict | None:
         "recent": storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT),
         "nearly": [{**game, "percent": stats.percent(game["unlocked"], game["total"])} for game in nearly],
         "nearly_percent": config.NEARLY_DONE_PERCENT,
+        "rarest": storage.get_rarest_unlock(steam_id),
     }
 
 

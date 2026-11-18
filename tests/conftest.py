@@ -31,8 +31,15 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
     monkeypatch.setattr(config, "WALLPAPER_DIR", tmp_path / "wallpapers")
     monkeypatch.setattr(config, "STEAM_API_KEY", FAKE_KEY)
+    # No test may reach the real Steam. A test that needs an answer fakes it;
+    # anything it forgot to fake fails here, loudly, instead of going online.
+    monkeypatch.setattr(api._session, "get", _no_network)
     api._resolve_custom_name.cache_clear()
     storage.init_db()
+
+
+def _no_network(*args, **kwargs):
+    raise AssertionError("a test tried to talk to the real Steam; fake that call instead")
 
 
 def make_game(app_id, name, hours=0.0, recent_hours=0.0, last_played=None, has_stats=False):

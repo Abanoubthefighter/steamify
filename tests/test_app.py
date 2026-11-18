@@ -339,8 +339,8 @@ def test_achievement_progress_shows_up_in_the_scan_stream(client, steam, monkeyp
         make_game(1, "Hades", hours=5, has_stats=True), make_game(2, "Celeste", hours=2, has_stats=True)])
     monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])
     events = scan(client, player="me")
-    last_step = len(sync.STEPS)
-    labels = [event["label"] for event in events if event.get("step") == last_step]
+    step = sync.STEPS.index("Checking achievements") + 1
+    labels = [event["label"] for event in events if event.get("step") == step]
     assert labels == ["Checking achievements", "Checking achievements 1/2", "Checking achievements 2/2"]
 
 
@@ -384,3 +384,10 @@ def test_versus_leaves_achievements_out_when_there_are_none_to_compare(client, s
     scan(client, player="me")
     page = client.get(f"/player/{ME}?vs={demo.PLAYER_ID}").text
     assert "Achievements, on" not in page
+
+
+def test_the_rarest_unlock_shows_with_its_share_of_players(client):
+    page = client.get(DEMO_PAGE).text
+    rarest = storage.get_rarest_unlock(demo.PLAYER_ID)
+    assert "Rarest unlock" in page and rarest["name"] in page
+    assert "of players have it" in page
