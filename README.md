@@ -21,9 +21,10 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
 - **Lives in the tray**, like Steam or Discord. Closing the window hides it next to the clock instead of quitting (the first time, Windows shows a short notice saying so). Click the icon to bring the window back; right-click it, or use Start > Shut down, to quit. Prefer the old way? Untick "Keep running in the tray" in Start > Settings.
 - **Starts with Windows, if you want it to.** Tick "Start with Windows, in the tray" in Start > Settings and the app starts hidden next to the clock when you log in, so the hourly sync runs without you opening anything. It's off until you turn it on, and only the installed app offers it.
+- **Badges for keeping it running**, a retro-tech ladder: Dial-up after 6 hours, then Floppy (12), CD-ROM (25), DVD (50) and Hard drive (75). The app counts the time it's open, in the window or in the tray, and time the computer spends asleep doesn't count. Your badge sits next to the clock; click it for badges.exe and the whole ladder. A new one gets a popup (and a Windows notice if the app is in the tray).
 - **Syncs by itself.** While the app is open, in the window or in the tray, it syncs every saved player about once an hour, so the playtime history fills in without you remembering to open it. Right-click the tray icon for Sync now. sync.exe says when the last background sync ran, and if it brought new numbers while you were looking, a "New data" button shows up in the taskbar. You can switch it off in Start > Settings.
 
-[Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png)
+[Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png) · [badges.exe](docs/badges.png)
 
 ## Installing
 
@@ -92,6 +93,7 @@ tray.py        the icon next to the clock, and what closing the window does
 background.py  the hourly sync while the app is open
 preferences.py the settings in settings.exe
 startup.py     Start with Windows: one value in the registry's Run list
+badges.py      the running clock and the badges it earns
 config.py      every setting in one place
 run.bat        sets things up on the first run, then opens the app
 build_exe.bat  builds the app and its installer
@@ -99,7 +101,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         289 tests; none can reach Steam or the real registry
+tests/         301 tests; none can reach Steam or the real registry
 ```
 
 A few decisions worth explaining:
@@ -107,6 +109,7 @@ A few decisions worth explaining:
 - **History without a history API.** Each scan compares the new totals with the saved ones and writes only the differences to a `play_log` table. A normal day adds a handful of rows instead of one per game owned. In a test with 3,000 games and 400 days of play the log held about 2,100 rows and the database was 360 KB.
 - **Saved data first, Steam second.** The dashboard is drawn from SQLite, so it opens straight away and works offline. If the data is older than 15 minutes the page asks for a fresh scan in the background.
 - **Start with Windows is the registry, not a saved setting.** Ticking the box adds one value to `HKEY_CURRENT_USER\...\CurrentVersion\Run` (the list Windows starts at login), pointing at the .exe with `--tray`; unticking removes it. The box reads the registry every time, so it always shows what Windows will really do, including when the app was switched off in Task Manager's Startup tab. The tests use a pretend registry, so running them never changes what your PC starts.
+- **Badges count time awake.** A clock thread adds the running time up once a minute, but a single tick never adds more than a minute, however long it really was since the last one. A laptop that slept all night wakes up to one late tick, so the night doesn't count. The total is one number in the database, and the badges are thresholds on it.
 - **Scans take turns.** The hourly background sync and Sync now on the page run the same scan code. A lock makes the second one wait for the first, so they never save the same player at the same moment. A background sync also never reloads the page under you: the page compares a short stamp of its numbers (games, minutes, unlocks) with the server's once a minute and offers a button instead.
 - **One connection to Steam.** A shared `requests.Session` keeps the connection open between calls. Measured here, the first call took about 600 ms and the following ones about 250 ms.
 - **Achievements without hammering Steam.** Steam has no "all my achievements" call, only one per game. So a scan only asks about games you've actually played. After that it only asks again about games whose playtime went up, because achievements only unlock while you play: a normal scan is a handful of calls, not one per game. Steam flags the games that have achievements, and those go first, but the unflagged ones get asked too, because the flag isn't always right. It asks four games at a time. If Steam says "slow down", it waits a few seconds and carries on one game at a time, and only after a few tries does it leave the rest for the next scan. The first version gave up at the first "slow down", which left most of a real library unchecked. Rarity is fetched at most once a week per game, and icons only for the achievements on screen.
@@ -123,6 +126,7 @@ On my machine the dashboard for a 3,000-game library renders in about 25 ms, and
 - **Colours, fonts, outline thickness, spacing:** `static/css/theme.css`. Nothing else contains a colour, and the charts read theirs from the same file.
 - **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number, and for achievements: how many games to ask at once, what counts as "so close", how often rarity is refreshed, how long to wait when Steam says slow down, and how often the background sync runs).
 - **The jokes:** `captions.py`.
+- **The badges:** names and hours in `BADGES` in `config.py`, the drawings in `templates/partials/badge_art.html`, their colours (`--badge-*`) in `theme.css`. The line under each badge is in `captions.py`.
 - **A new wallpaper pattern:** add a name to `WALLPAPER_PATTERNS` in `config.py` and a `.pattern--<name>` rule in `style.css`. It shows up in wallpaper.exe, preview included. A drawing (like the default, Hills) also gets its shapes in `templates/partials/wallpaper_art.html`.
 - **The Hills colours, or how dim it is:** the `--hills-*` variables in `theme.css`. `--hills-dim: 0` shows it in full colour.
 - **A new sort order:** add one function and one line to `SORT_ORDERS` in `stats.py`. The radio button appears on its own. The same goes for trophies.exe and `TROPHY_ORDERS`.
