@@ -1,7 +1,8 @@
 """Shared test setup.
 
-Every test gets its own empty database in a temp folder and a fake API key,
-so nothing here can touch the real data or go online by accident.
+Every test gets its own empty database in a temp folder, a fake API key and
+a pretend registry, so nothing here can touch the real data, go online, or
+change what Windows starts at login by accident.
 """
 
 import sys
@@ -14,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import api  # noqa: E402
 import config  # noqa: E402
+import startup  # noqa: E402
 import storage  # noqa: E402
 
 FAKE_KEY = "0123456789ABCDEF0123456789ABCDEF"
@@ -35,7 +37,51 @@ def isolated(tmp_path, monkeypatch):
     # anything it forgot to fake fails here, loudly, instead of going online.
     monkeypatch.setattr(api._session, "get", _no_network)
     api._resolve_custom_name.cache_clear()
+    # The same for the registry: startup.py only ever sees a pretend one.
+    monkeypatch.setattr(startup, "winreg", FakeRegistry())
     storage.init_db()
+
+
+class FakeRegistry:
+    """Just enough of the winreg module for startup.py, kept in a dict."""
+
+    HKEY_CURRENT_USER = "HKCU"
+    KEY_SET_VALUE = 0x0002
+    REG_SZ = 1
+
+    def __init__(self):
+        self.keys = {}  # (root, path) -> {value name: value}
+
+    class Key:
+        def __init__(self, values):
+            self.values = values
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def OpenKey(self, root, path, reserved=0, access=0):
+        if (root, path) not in self.keys:
+            raise FileNotFoundError(path)
+        return self.Key(self.keys[(root, path)])
+
+    def CreateKey(self, root, path):
+        return self.Key(self.keys.setdefault((root, path), {}))
+
+    def QueryValueEx(self, key, name):
+        if name not in key.values:
+            raise FileNotFoundError(name)
+        return key.values[name], self.REG_SZ
+
+    def SetValueEx(self, key, name, reserved, kind, value):
+        key.values[name] = value
+
+    def DeleteValue(self, key, name):
+        if name not in key.values:
+            raise FileNotFoundError(name)
+        del key.values[name]
 
 
 def _no_network(*args, **kwargs):
