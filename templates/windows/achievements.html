@@ -22,6 +22,13 @@
         <span class="progress__fill"></span>
       </div>
       <p class="note">{{ achievements.caption }}</p>
+      {% if achievements.private %}
+      <p class="note note--warning">Steam stopped sharing these achievements, so they're from the last time it did.
+        They come back once the profile's Game details are public again.</p>
+      {% elif achievements.waiting %}
+      <p class="note note--warning">{{ achievements.waiting }} of {{ achievements.played }} played games still to check.
+        They come in with the next sync.</p>
+      {% endif %}
     </section>
 
     <section class="achievements__part" aria-labelledby="achievements-latest">
@@ -82,6 +89,12 @@
     </section>
   </div>
 
+  {% elif achievements and achievements.private %}
+  <p class="empty">Steam won't share this player's achievements. They show up here once the profile's
+    Game details are set to Public in Steam's privacy settings.</p>
+  {% elif achievements and achievements.waiting %}
+  <p class="empty">No achievements so far, with {{ achievements.waiting }} of {{ achievements.played }} played games
+    still to check. The rest come in with the next sync.</p>
   {% elif achievements %}
   <p class="empty">None of the games played so far have achievements. Bold.</p>
   {% elif has_key or is_demo %}

@@ -193,6 +193,7 @@ def test_private_achievements_stop_the_check_at_once(achievements, waits, monkey
     assert events[-1]["steam_id"] == ME
     assert waits == []  # no point waiting: Steam won't change its mind in a few seconds
     assert storage.get_achievement_summary(ME)["checked"] == 0
+    assert storage.get_achievement_coverage(ME)["private"] is True
 
 
 def test_games_to_check():

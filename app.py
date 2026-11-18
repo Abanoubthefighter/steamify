@@ -261,14 +261,20 @@ def _achievement_duel(player: dict, friend: dict) -> dict | None:
 
 
 def _achievements(steam_id: str) -> dict | None:
-    """The numbers behind achievements.exe, or None if no game has been checked yet."""
+    """The numbers behind achievements.exe, or None if there's nothing to say yet.
+
+    Also says how complete they are: played games still waiting for a check,
+    and whether Steam keeps this player's achievements private.
+    """
     totals = storage.get_achievement_summary(steam_id)
-    if not totals["checked"]:
+    coverage = storage.get_achievement_coverage(steam_id)
+    if not totals["checked"] and not coverage["private"]:
         return None
     percent = stats.percent(totals["unlocked"], totals["total"])
     nearly = storage.get_nearly_done(steam_id, config.NEARLY_DONE_PERCENT, config.NEARLY_DONE_COUNT)
     return {
         **totals,
+        **coverage,
         "percent": percent,
         "caption": captions.achievement_caption(totals, percent),
         "recent": storage.get_recent_unlocks(steam_id, config.RECENT_UNLOCKS_COUNT),

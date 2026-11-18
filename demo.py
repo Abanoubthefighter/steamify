@@ -101,6 +101,11 @@ ACHIEVEMENT_NAMES = [
 # Achievements get their own random numbers, so adding them didn't change the demo library.
 ACHIEVEMENT_SEED = SEED + 1
 
+# Bump this when the made-up data changes shape. A demo saved by an older
+# version is then rebuilt at the next start instead of the next day.
+# 2: games without achievements are saved as checked (so nothing is "still to check").
+DATA_VERSION = "2"
+
 
 def is_demo(steam_id: str) -> bool:
     return steam_id in (PLAYER_ID, FRIEND_ID)
@@ -110,11 +115,14 @@ def install(force: bool = False) -> None:
     """Put the demo players in the database.
 
     Does nothing if they were already loaded today. On a new day it rebuilds
-    them, so the invented history always runs right up to the present.
+    them, so the invented history always runs right up to the present. It
+    also rebuilds them when they were made by an older version of this file
+    (see DATA_VERSION).
     """
     today = date.today()
     saved = storage.get_player(PLAYER_ID)
-    if saved and not force and date.fromtimestamp(saved["synced_at"]) == today:
+    up_to_date = storage.get_setting("demo_version") == DATA_VERSION
+    if saved and not force and up_to_date and date.fromtimestamp(saved["synced_at"]) == today:
         return
 
     rng = random.Random(SEED)
@@ -139,8 +147,9 @@ def install(force: bool = False) -> None:
         storage.save_many_achievements(
             steam_id, [(app_id, minutes[app_id], achievements) for app_id, achievements in invented.items()]
         )
-        with_achievements.update(invented)
+        with_achievements.update(app_id for app_id, achievements in invented.items() if achievements)
     storage.save_rarity(_invent_rarity(unlock_rng, sorted(with_achievements)))
+    storage.set_setting("demo_version", DATA_VERSION)
 
 
 def scan(query: str, force: bool = False):
@@ -242,7 +251,10 @@ def _invent_achievements(rng: random.Random, games: list[dict], since: float) ->
     """
     invented = {}
     for game in games:
-        if not game["minutes"] or rng.random() < 0.25:
+        if not game["minutes"]:
+            continue
+        if rng.random() < 0.25:
+            invented[game["app_id"]] = []  # checked, and it has none
             continue
         total = rng.randint(12, 60)
         done = round(total * min(1.0, game["minutes"] / 60 / rng.uniform(15, 120)))

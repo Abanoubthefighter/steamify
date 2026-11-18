@@ -376,6 +376,30 @@ def test_achievements_explain_the_key_when_there_is_none(client, steam, monkeypa
     assert "Achievements need a Steam API key" in client.get(f"/player/{ME}").text
 
 
+def test_achievements_say_how_many_played_games_are_still_to_check(client, steam, monkeypatch):
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [
+        make_game(1, "Hades", hours=40, has_stats=True), make_game(2, "Portal", hours=8),
+    ])
+
+    def answer(steam_id, app_id):
+        if app_id == 2:
+            raise api.SteamTimeout()
+        return make_achievements(1, unlocked=3, locked=1)
+
+    monkeypatch.setattr(api, "get_achievements", answer)
+    scan(client, player="me")
+    assert "1 of 2 played games still to check" in client.get(f"/player/{ME}").text
+
+
+def test_private_achievements_are_explained(client, steam, monkeypatch):
+    def private(steam_id, app_id):
+        raise api.PrivateAchievements()
+
+    monkeypatch.setattr(api, "get_achievements", private)
+    scan(client, player="me")
+    assert "Steam won't share this player's achievements" in client.get(f"/player/{ME}").text
+
+
 def test_a_library_with_no_achievements_at_all_says_so(client, steam, monkeypatch):
     monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [make_game(1, "Garry's Mod", hours=3, has_stats=True)])
     monkeypatch.setattr(api, "get_achievements", lambda steam_id, app_id: [])

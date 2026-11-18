@@ -95,6 +95,13 @@ CREATE TABLE IF NOT EXISTS rarity_checked (
     checked_at  INTEGER NOT NULL
 );
 
+-- Players whose achievements Steam wouldn't share at their latest scan.
+-- A row goes away again as soon as Steam answers for one of their games.
+CREATE TABLE IF NOT EXISTS private_achievements (
+    steam_id    TEXT PRIMARY KEY REFERENCES players (steam_id) ON DELETE CASCADE,
+    noticed_at  INTEGER NOT NULL
+) WITHOUT ROWID;
+
 -- Small things to remember between runs, like who was on screen last.
 CREATE TABLE IF NOT EXISTS settings (
     key    TEXT PRIMARY KEY,
@@ -361,6 +368,7 @@ def _write_achievements(db: sqlite3.Connection, steam_id: str, app_id: int, minu
         ({**item, "app_id": app_id} for item in achievements),
     )
     db.execute("DELETE FROM unlocks WHERE steam_id = ? AND app_id = ?", (steam_id, app_id))
+    db.execute("DELETE FROM private_achievements WHERE steam_id = ?", (steam_id,))  # Steam shared them, so they aren't private
     db.executemany(
         "INSERT INTO unlocks (steam_id, app_id, api_name, unlocked_at) VALUES (?, ?, ?, ?)",
         ((steam_id, app_id, item["api_name"], item["unlocked_at"]) for item in unlocked),
@@ -451,6 +459,39 @@ def get_achievement_summary(steam_id: str) -> dict:
             (steam_id,),
         ).fetchone()
     return dict(row)
+
+
+def get_achievement_coverage(steam_id: str) -> dict:
+    """How complete a player's achievement numbers are.
+
+    {"played": games played at all, "waiting": played games never checked
+    yet, "private": True if Steam wouldn't share them at the latest scan}
+    """
+    with open_db() as db:
+        row = db.execute(
+            """
+            SELECT COUNT(*)                                AS played,
+                   COUNT(*) FILTER (WHERE a.app_id IS NULL) AS waiting,
+                   EXISTS (SELECT 1 FROM private_achievements WHERE steam_id = :id) AS private
+            FROM library AS l
+            LEFT JOIN achievement_games AS a ON a.steam_id = l.steam_id AND a.app_id = l.app_id
+            WHERE l.steam_id = :id AND l.minutes > 0
+            """,
+            {"id": steam_id},
+        ).fetchone()
+    return {**dict(row), "private": bool(row["private"])}
+
+
+def mark_achievements_private(steam_id: str, now: float | None = None) -> None:
+    """Remember that Steam wouldn't share this player's achievements.
+
+    Saving any of their achievements later (save_achievements) clears it again.
+    """
+    with open_db() as db:
+        db.execute(
+            "INSERT INTO private_achievements (steam_id, noticed_at) VALUES (?, ?) ON CONFLICT (steam_id) DO NOTHING",
+            (steam_id, int(now or time.time())),
+        )
 
 
 def get_recent_unlocks(steam_id: str, limit: int) -> list[dict]:

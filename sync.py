@@ -115,7 +115,10 @@ def check_achievements(steam_id: str, games: list[dict]):
         try:
             for game, answer in answers:
                 if isinstance(answer, api.PrivateAchievements):
-                    return  # private for one game means private for all of them
+                    # Private for one game means private for all of them. Remembered,
+                    # so achievements.exe can say why it's empty (or out of date).
+                    storage.mark_achievements_private(steam_id)
+                    return
                 if isinstance(answer, api.RateLimited):
                     slowed_down = True
                     break  # closing `answers` cancels the calls that haven't gone out yet

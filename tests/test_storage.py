@@ -174,6 +174,21 @@ def test_a_game_without_achievements_is_remembered_but_not_counted():
     assert storage.get_achievement_summary("me") == {"unlocked": 0, "total": 0, "games": 0, "perfect": 0, "checked": 1}
 
 
+def test_coverage_counts_played_games_still_waiting_for_a_check():
+    owns("me", make_game(1, "Hades", hours=40), make_game(2, "Portal", hours=8), make_game(3, "Never played"))
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=4, locked=6))
+    assert storage.get_achievement_coverage("me") == {"played": 2, "waiting": 1, "private": False}
+
+
+def test_private_achievements_are_remembered_until_steam_shares_them_again():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.mark_achievements_private("me")
+    storage.mark_achievements_private("me")  # noticed again on the next scan: still one row, no error
+    assert storage.get_achievement_coverage("me")["private"] is True
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=1))
+    assert storage.get_achievement_coverage("me")["private"] is False
+
+
 def test_a_new_check_replaces_the_old_unlocks_and_keeps_known_icons():
     owns("me", make_game(1, "Hades", hours=40))
     storage.save_achievements("me", 1, 100, make_achievements(1, unlocked=1, locked=2))

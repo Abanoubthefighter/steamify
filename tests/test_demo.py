@@ -76,9 +76,21 @@ def test_pretend_scan_walks_through_the_same_steps(monkeypatch):
     assert events[-1] == {"steam_id": demo.PLAYER_ID, "gained": 0}
 
 
+def test_a_demo_made_by_an_older_version_is_rebuilt_straight_away():
+    demo.install(force=True)
+    storage.forget_player(demo.FRIEND_ID)
+    demo.install()
+    assert storage.get_player(demo.FRIEND_ID) is None  # same day, same version: left alone
+    storage.set_setting("demo_version", "1")
+    demo.install()
+    assert storage.get_player(demo.FRIEND_ID) is not None
+    assert storage.get_setting("demo_version") == demo.DATA_VERSION
+
+
 def test_demo_players_get_made_up_achievements():
     demo.install(force=True)
     mine = storage.get_achievement_summary(demo.PLAYER_ID)
     assert mine["games"] > 0 and 0 < mine["unlocked"] < mine["total"]
     assert storage.get_recent_unlocks(demo.PLAYER_ID, 3)
     assert storage.get_shared_achievements(demo.PLAYER_ID, demo.FRIEND_ID)["games"] > 0
+    assert storage.get_achievement_coverage(demo.PLAYER_ID)["waiting"] == 0  # every played game "checked"

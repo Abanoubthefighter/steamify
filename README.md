@@ -12,7 +12,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Playtime history.** Steam only ever tells you lifetime totals, so the app logs the difference between scans and builds its own history from that.
 - **Top games, recent games and the full library**, sortable and searchable.
 - **warning.exe**: a stack of popups about your habits (how much of your library you never opened, that one game eating a third of your time).
-- **achievements.exe**: how many achievements you've unlocked across your games, your latest unlocks, the games you've nearly finished, and your rarest unlock (with the share of all players who have it).
+- **achievements.exe**: how many achievements you've unlocked across your games, your latest unlocks, the games you've nearly finished, and your rarest unlock (with the share of all players who have it). If some played games haven't been checked yet, or Steam keeps a profile's achievements private, the window says so instead of pretending to be complete.
 - **versus.exe**: compare with a friend, game by game, and on achievements in the games you both own.
 - **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
@@ -90,7 +90,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
-tests/         221 tests; any that tried to reach Steam would fail
+tests/         230 tests; any that tried to reach Steam would fail
 ```
 
 A few decisions worth explaining:

@@ -72,6 +72,12 @@ a {
   font-size: var(--text-sm);
 }
 
+/* A note that says the numbers above aren't the whole story (yet). */
+.note--warning {
+  color: var(--red-ink);
+  font-weight: 700;
+}
+
 /* .big is for numbers and one-word shouts, .heading for a short sentence. */
 .big {
   font: 600 var(--text-xl) / 1.1 var(--font-ui);
