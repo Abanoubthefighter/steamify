@@ -2,6 +2,7 @@
 
 import io
 import json
+from datetime import date
 
 import pytest
 
@@ -476,3 +477,33 @@ def test_the_start_menu_offers_to_forget_real_players_but_not_the_demo(client):
     page = client.get(DEMO_PAGE).text
     assert f'data-forget-player="{FRIEND}"' in page
     assert f'data-forget-player="{demo.PLAYER_ID}"' not in page
+
+
+# --- trophies.exe ---
+
+
+def test_achievements_exe_links_to_trophies_exe(client):
+    assert "data-open-trophies" in client.get(DEMO_PAGE).text
+
+
+def test_trophies_lists_every_game_with_achievements(client):
+    page = client.get(f"{DEMO_PAGE}/trophies").text
+    games = storage.get_achievement_games(demo.PLAYER_ID)
+    assert 'data-title="trophies.exe"' in page
+    assert page.count("data-trophy-game=") == len(games)
+    assert "average completion" in page and f"unlocked in {date.today().year}" in page
+
+
+def test_trophy_rows_can_be_sorted_and_searched(client):
+    perfect = client.get(f"{DEMO_PAGE}/trophies/rows?sort=perfect").text
+    finished = [game for game in storage.get_achievement_games(demo.PLAYER_ID) if game["unlocked"] == game["total"]]
+    assert perfect.count("data-trophy-game=") == len(finished)
+    name = finished[0]["name"]
+    found = client.get(f"{DEMO_PAGE}/trophies/rows", query_string={"q": name}).text
+    assert f'data-trophy-game="{finished[0]["app_id"]}"' in found
+    assert "No game with achievements called" in client.get(f"{DEMO_PAGE}/trophies/rows?q=zzzz").text
+    assert client.get(f"{DEMO_PAGE}/trophies/rows?sort=nonsense").status_code == 200  # falls back to the default
+
+
+def test_trophies_for_an_unknown_player_is_not_found(client):
+    assert client.get("/player/76561190000000000/trophies").status_code == 404

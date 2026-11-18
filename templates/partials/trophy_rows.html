@@ -1,0 +1,35 @@
+{#
+  The game list inside trophies.exe plus its status bar. Rendered with the
+  window, and again on its own whenever the sort or the search box changes.
+  Clicking a game opens all of its achievements.
+#}
+{% if trophies.rows %}
+<ul class="rows rows--trophies scroll" role="list">
+  {% for game in trophies.rows %}
+  <li>
+    <button class="row row--trophy" type="button" data-trophy-game="{{ game.app_id }}"
+            aria-label="{{ game.name }}: {{ game.unlocked }} of {{ game.total }} achievements">
+      {% set icon = game | icon_url %}
+      {% if icon %}
+      <img class="row__icon" src="{{ icon }}" alt="" width="24" height="24" loading="lazy">
+      {% else %}
+      <span class="row__icon row__icon--letter" aria-hidden="true">{{ game.name[:1] | upper }}</span>
+      {% endif %}
+      <span class="row__name">{{ game.name }}{% if game.unlocked == game.total %} <span class="row__tag">100%</span>{% endif %}</span>
+      <span class="meter" style="--progress: {{ game.percent }}%" aria-hidden="true"></span>
+      <span class="row__count">{{ game.unlocked }}/{{ game.total }}</span>
+      <span class="row__when">{{ game.last_unlock | ago if game.last_unlock else "–" }}</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+{% elif trophies.query %}
+<p class="empty">No game with achievements called “{{ trophies.query }}”.</p>
+{% elif trophies.total %}
+<p class="empty">No game fits this one. Pick another under Show.</p>
+{% else %}
+<p class="empty">No game with achievements checked yet. They come in with the next sync.</p>
+{% endif %}
+<div class="statusbar">
+  <span>{{ trophies.rows | length | plural("game") }}{% if trophies.rows | length < trophies.total %} of {{ trophies.total }}{% endif %}</span>
+</div>

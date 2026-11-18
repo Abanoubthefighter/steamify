@@ -8,6 +8,7 @@ import { initLibrary } from "./library.js";
 import { initCharts } from "./charts.js";
 import { initWallpaper } from "./wallpaper.js";
 import { initPlayers } from "./players.js";
+import { initTrophies } from "./trophies.js";
 
 initDesktop();
 initAlerts();
@@ -16,3 +17,4 @@ initLibrary();
 initCharts();
 initWallpaper();
 initPlayers();
+initTrophies();

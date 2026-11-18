@@ -219,14 +219,19 @@ function tidyUp() {
 /**
  * Open a floating window. `content` is a DOM node (or fragment) for its body.
  * `onClose` runs after the popup is closed, however that happens.
+ * `big` makes a wide window with left-aligned content, for lists (trophies.exe).
  */
-export function openPopup({ title, content, color = "lilac", onClose }) {
+export function openPopup({ title, content, color = "lilac", big = false, onClose }) {
   const win = document.getElementById("popup-template").content.firstElementChild.cloneNode(true);
   const heading = win.querySelector("[data-title]");
   heading.textContent = title;
   heading.id = `popup-${++popupCount}-title`;
   win.setAttribute("aria-labelledby", heading.id);
   win.classList.add(`win--${color}`);
+  if (big) {
+    win.classList.add("popup--big");
+    win.querySelector("[data-popup-body]").classList.remove("center");
+  }
   win.querySelector("[data-popup-body]").append(content);
   closeHandlers.set(win, { onClose, cameFrom: document.activeElement });
 

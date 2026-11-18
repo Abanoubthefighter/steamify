@@ -1,0 +1,47 @@
+{#
+  trophies.exe: every game with achievements, in one big floating window.
+  Fetched on its own when "View all games" in achievements.exe is pressed
+  (static/js/trophies.js). Like library.exe, the sort and the search box ask
+  the server for fresh rows (partials/trophy_rows.html).
+#}
+{% from "partials/stat_tile.html" import stat_tile %}
+<div class="trophies" data-title="trophies.exe" data-trophies>
+  <div class="tiles tiles--five">
+    {{ stat_tile(overview.unlocked | number, "of " ~ overview.total | number ~ " unlocked") }}
+    {{ stat_tile(overview.average ~ "%", "average completion") }}
+    {{ stat_tile(overview.perfect | number, "perfect " ~ ("game" if overview.perfect == 1 else "games")) }}
+    {{ stat_tile(overview.started | number ~ "/" ~ overview.games | number, "games started") }}
+    {{ stat_tile(this_year | number, "unlocked in " ~ year) }}
+  </div>
+  <p class="note">Average completion counts the games you've unlocked at least one achievement in, like Steam does.</p>
+  {% if coverage.private %}
+  <p class="note note--warning">Steam stopped sharing these achievements, so they're from the last time it did.</p>
+  {% elif coverage.waiting %}
+  <p class="note note--warning">{{ coverage.waiting }} of {{ coverage.played }} played games still to check. They come in with the next sync.</p>
+  {% endif %}
+
+  <form class="trophies__controls" data-trophy-form>
+    <label class="sr-only" for="trophy-search">Search games with achievements</label>
+    <input class="field" id="trophy-search" type="search" name="q" autocomplete="off" spellcheck="false"
+           placeholder="Search {{ overview.games | plural('game') }}" data-trophy-search data-autofocus>
+    <fieldset class="radios radios--row">
+      <legend class="label">Show</legend>
+      {% for key, label in trophy_choices %}
+      <label><input type="radio" name="sort" value="{{ key }}"{{ ' checked' if key == trophies.order }}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+  </form>
+
+  <div class="trophies__list">
+    <div class="rows-header rows-header--trophies" aria-hidden="true">
+      <span>Game</span><span>Unlocked</span><span>Latest</span>
+    </div>
+    <div class="rows-area" data-trophy-rows aria-live="polite">
+      {% include "partials/trophy_rows.html" %}
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn--small" type="button" data-action="close">Done</button>
+  </div>
+</div>

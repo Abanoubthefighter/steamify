@@ -9,6 +9,7 @@ desktop.py wraps the very same app in a native window.
 """
 
 import json
+from datetime import date
 
 from flask import (
     Flask,
@@ -195,6 +196,42 @@ def game_card(steam_id: str, app_id: int):
         game_count=len(games),
         share=stats.percent(game["minutes"], total),
     )
+
+
+@app.get("/player/<steam_id>/trophies")
+def trophies(steam_id: str):
+    """trophies.exe: every game with achievements. Fetched when "View all" in achievements.exe is pressed."""
+    storage.get_player(steam_id) or abort(404)
+    games = storage.get_achievement_games(steam_id)
+    year = str(date.today().year)
+    return render_template(
+        "partials/trophies.html",
+        overview=stats.achievement_overview(games),
+        year=year,
+        this_year=sum(row["unlocks"] for row in storage.get_unlock_counts(steam_id, "year", since=year)),
+        coverage=storage.get_achievement_coverage(steam_id),
+        trophy_choices=stats.trophy_choices(),
+        trophies=_trophy_page(games, request.args),
+    )
+
+
+@app.get("/player/<steam_id>/trophies/rows")
+def trophy_rows(steam_id: str):
+    """Just the game list of trophies.exe, re-sorted or filtered. The page swaps it in."""
+    storage.get_player(steam_id) or abort(404)
+    page = _trophy_page(storage.get_achievement_games(steam_id), request.args)
+    return render_template("partials/trophy_rows.html", trophies=page)
+
+
+def _trophy_page(games: list[dict], args) -> dict:
+    """Sort and filter trophies.exe's game list the way the request asked for."""
+    order = args.get("sort", stats.DEFAULT_TROPHY_ORDER)
+    if order not in stats.TROPHY_ORDERS:
+        order = stats.DEFAULT_TROPHY_ORDER
+    query = args.get("q", "").strip()
+    matches = stats.search_games(stats.sort_trophies(games, order), query)
+    rows = [{**game, "percent": stats.completion(game)} for game in matches]
+    return {"rows": rows, "total": len(games), "order": order, "query": query}
 
 
 def _menu_players() -> list[dict]:
