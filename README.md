@@ -28,7 +28,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 
 ## Installing
 
-Run `SteamStatsTracker-1.2.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
+Run `SteamStatsTracker-1.3.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
 - To update, run the newer installer. Your play history and API key stay. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
@@ -56,7 +56,7 @@ py desktop.py
 You need [Inno Setup 6](https://jrsoftware.org/isinfo.php) (free) on top of the usual setup. Then double-click `build_exe.bat`. It takes under a minute and makes two things in `dist\`:
 
 - `SteamStatsTracker\`: the app, built by PyInstaller from `packaging\SteamStatsTracker.spec`. It runs without Python.
-- `SteamStatsTracker-<version>-Setup.exe` (for example `SteamStatsTracker-1.2.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
+- `SteamStatsTracker-<version>-Setup.exe` (for example `SteamStatsTracker-1.3.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
 
 Without Inno Setup you still get the folder. A few things worth knowing:
 
