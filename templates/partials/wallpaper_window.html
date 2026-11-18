@@ -1,0 +1,30 @@
+{#
+  wallpaper.exe: a floating window, opened from the start menu (System >
+  Change wallpaper). The choices come from config.WALLPAPER_PATTERNS, and
+  each preview uses the same CSS class as the real wallpaper. Which one is
+  ticked is filled in by static/js/wallpaper.js when the window opens.
+#}
+<template data-popup="wallpaper" data-title="wallpaper.exe" data-color="sand">
+  <form class="wallpaper-form" data-wallpaper-form>
+    <fieldset class="radios patterns">
+      <legend class="label">Wallpaper</legend>
+      {% for key, label in wallpaper_patterns.items() %}
+      <label>
+        <input type="radio" name="pattern" value="{{ key }}">
+        <span class="swatch" aria-hidden="true"><span class="swatch__pattern pattern--{{ key }}"></span></span>
+        {{ label }}
+      </label>
+      {% endfor %}
+      <label data-picture-choice hidden>
+        <input type="radio" name="pattern" value="picture">
+        <span class="swatch" aria-hidden="true"><img class="swatch__picture" alt="" data-picture-thumb></span>
+        Your picture
+      </label>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn--small" type="button" data-wallpaper-reset>Reset to default</button>
+      <button class="btn btn--small" type="button" data-action="close">Done</button>
+    </div>
+  </form>
+</template>

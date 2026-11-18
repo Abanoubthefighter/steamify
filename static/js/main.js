@@ -6,9 +6,11 @@ import { initAlerts } from "./alerts.js";
 import { initScan } from "./scan.js";
 import { initLibrary } from "./library.js";
 import { initCharts } from "./charts.js";
+import { initWallpaper } from "./wallpaper.js";
 
 initDesktop();
 initAlerts();
 initScan();
 initLibrary();
 initCharts();
+initWallpaper();

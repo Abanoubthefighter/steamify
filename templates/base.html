@@ -44,6 +44,7 @@
       <p class="start-menu__heading">System</p>
       <ul>
         <li><button class="menu-item" type="button" data-menu="tidy">Tidy up windows</button></li>
+        <li><button class="menu-item" type="button" data-menu="wallpaper">Change wallpaper</button></li>
         <li><button class="menu-item" type="button" data-popup-open="about">About</button></li>
         <li><button class="menu-item" type="button" data-menu="quit">Shut down</button></li>
       </ul>
@@ -79,6 +80,8 @@
     <p class="note">Version {{ app_version }}</p>
     <button class="btn" type="button" data-action="close" data-autofocus>Ok</button>
   </template>
+
+  {% include "partials/wallpaper_window.html" %}
 
   <template data-popup="shutdown" data-title="shutdown.exe">
     <p class="big">Bye for now</p>

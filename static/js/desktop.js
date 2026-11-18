@@ -259,11 +259,15 @@ export function showMessage({ heading, message, title = "error.exe", color = "re
   return openPopup({ title, content, color, onClose });
 }
 
-/** Open one of the ready-made popups that sit in the page as <template data-popup="name">. */
+/**
+ * Open one of the ready-made popups that sit in the page as
+ * <template data-popup="name" data-title="..." data-color="...">.
+ */
 export function openTemplatePopup(name) {
   const template = document.querySelector(`template[data-popup="${CSS.escape(name)}"]`);
   if (!template) return null;
-  return openPopup({ title: template.dataset.title, content: template.content.cloneNode(true) });
+  const { title, color } = template.dataset;
+  return openPopup({ title, color, content: template.content.cloneNode(true) });
 }
 
 // --- Start menu and taskbar ------------------------------------------------
@@ -289,6 +293,11 @@ function renderPrograms() {
     return item;
   });
   startMenu.querySelector("[data-programs]").replaceChildren(...items);
+}
+
+/** Let another file handle a start menu item, e.g. <button data-menu="wallpaper">. */
+export function addMenuAction(name, action) {
+  menuActions[name] = action;
 }
 
 const menuActions = {

@@ -244,3 +244,11 @@ def test_reset_brings_back_the_default(client):
 def test_only_the_current_picture_is_served(client):
     assert client.get("/wallpaper/picture/wallpaper-nope.png").status_code == 404
     assert client.get("/wallpaper/picture/..%2Ftest.db").status_code == 404
+
+
+def test_wallpaper_exe_is_in_the_start_menu_with_every_pattern(client):
+    page = client.get(DEMO_PAGE).text
+    assert 'data-menu="wallpaper"' in page
+    assert 'data-title="wallpaper.exe"' in page
+    for key, label in config.WALLPAPER_PATTERNS.items():
+        assert f'value="{key}"' in page and label in page
