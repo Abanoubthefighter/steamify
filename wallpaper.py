@@ -107,6 +107,38 @@ def set_dim(percent) -> dict:
     return _save({**current(), "dim": clamp_dim(percent)})
 
 
+def import_picture(data: bytes) -> dict:
+    """Copy a picture into the app's data folder and make it the wallpaper.
+
+    The copy is named after a short fingerprint of its contents, so a new
+    picture always gets a new name. That way the window never shows an old
+    copy from its cache, and importing the same picture twice is harmless.
+    """
+    if len(data) > config.WALLPAPER_MAX_MB * 1024 * 1024:
+        raise WallpaperError("That picture is too big", f"Pick one under {config.WALLPAPER_MAX_MB} MB.")
+    extension = _picture_extension(data)
+    name = f"{FILE_PREFIX}{hashlib.sha256(data).hexdigest()[:12]}{extension}"
+
+    folder = config.WALLPAPER_DIR
+    folder.mkdir(parents=True, exist_ok=True)
+    # Write under a temporary name, then swap it in. If the app is closed
+    # halfway, the wallpaper is never a half-written file.
+    temporary = folder / f"{name}.part"
+    temporary.write_bytes(data)
+    os.replace(temporary, folder / name)
+
+    choice = _save({**current(), "pattern": PICTURE, "picture": name})
+    _delete_pictures(keep=name)  # the previous picture, if there was one
+    return choice
+
+
+def _picture_extension(data: bytes) -> str:
+    for extension, looks_right in FORMATS.items():
+        if looks_right(data):
+            return extension
+    raise WallpaperError("That's not a picture the app can use", "Pick a PNG, JPG or WebP image.")
+
+
 def reset() -> dict:
     """Back to the default pattern and dim level, and delete the imported copy."""
     _delete_pictures(keep=None)

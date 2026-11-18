@@ -1,11 +1,12 @@
 {#
   wallpaper.exe: a floating window, opened from the start menu (System >
   Change wallpaper). The choices come from config.WALLPAPER_PATTERNS, and
-  each preview uses the same CSS class as the real wallpaper. Which one is
-  ticked is filled in by static/js/wallpaper.js when the window opens.
+  each preview uses the same CSS class as the real wallpaper. What's ticked,
+  the slider position and the picture preview are filled in by
+  static/js/wallpaper.js when the window opens.
 #}
 <template data-popup="wallpaper" data-title="wallpaper.exe" data-color="sand">
-  <form class="wallpaper-form" data-wallpaper-form>
+  <form class="wallpaper-form" data-wallpaper-form data-max-bytes="{{ wallpaper_max_mb * 1024 * 1024 }}">
     <fieldset class="radios patterns">
       <legend class="label">Wallpaper</legend>
       {% for key, label in wallpaper_patterns.items() %}
@@ -21,6 +22,19 @@
         Your picture
       </label>
     </fieldset>
+
+    <div class="picture-import">
+      {# The real file picker is hidden; the button opens it, so it looks like the other buttons. #}
+      <input type="file" accept="image/png,image/jpeg,image/webp" data-picture-file hidden>
+      <button class="btn btn--small" type="button" data-picture-pick>Import picture…</button>
+      <p class="note">PNG, JPG or WebP, up to {{ wallpaper_max_mb }} MB. The app keeps its own copy.</p>
+    </div>
+
+    <div class="dim">
+      <label class="label" for="wallpaper-dim">Dim the picture <span class="label__hint" data-dim-value></span></label>
+      <input class="slider" id="wallpaper-dim" type="range" name="dim" min="0" max="{{ wallpaper_dim_max }}" step="5">
+      <p class="note" data-dim-note>Pick your picture above to use this.</p>
+    </div>
 
     <div class="btn-row">
       <button class="btn btn--small" type="button" data-wallpaper-reset>Reset to default</button>

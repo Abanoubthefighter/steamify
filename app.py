@@ -37,6 +37,9 @@ import wallpaper
 app = Flask(__name__)
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+# The biggest request the server reads: an imported wallpaper, plus a little
+# room for the form around it. wallpaper.py checks the picture's exact size.
+app.config["MAX_CONTENT_LENGTH"] = (config.WALLPAPER_MAX_MB + 1) * 1024 * 1024
 
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
@@ -96,6 +99,8 @@ def template_globals() -> dict:
         # fragments (library rows, game card) don't read the setting for nothing.
         "wallpaper": wallpaper_state,
         "wallpaper_patterns": config.WALLPAPER_PATTERNS,
+        "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
+        "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
     }
 
 
@@ -309,6 +314,19 @@ def change_wallpaper():
     return jsonify(wallpaper_state())
 
 
+@app.post("/wallpaper/picture")
+def import_wallpaper():
+    """Copy a picture from the user's computer and make it the wallpaper."""
+    upload = request.files.get("picture")
+    if upload is None:
+        return jsonify(title="No picture", message="Pick a picture to import first."), 400
+    try:
+        choice = wallpaper.import_picture(upload.read())
+    except wallpaper.WallpaperError as error:
+        return jsonify(error.as_dict()), 400
+    return jsonify(wallpaper_state(choice))
+
+
 @app.post("/wallpaper/reset")
 def reset_wallpaper():
     """Back to the default pattern. The imported copy is deleted; the original never is."""
@@ -358,6 +376,12 @@ def not_found(error):
         title="File not found",
         message="There's nothing at this address. Maybe that player was never scanned?",
     ), 404
+
+
+@app.errorhandler(413)
+def too_big(error):
+    # Only an imported picture can be this big, and wallpaper.exe shows the reply as a popup.
+    return jsonify(title="That picture is too big", message=f"Pick one under {config.WALLPAPER_MAX_MB} MB."), 413
 
 
 @app.errorhandler(500)

@@ -7,6 +7,7 @@ import pytest
 import config
 import storage
 import wallpaper
+from conftest import JPG, PNG, WEBP
 
 
 def test_first_run_gets_the_default_pattern():
@@ -70,3 +71,57 @@ def test_only_names_the_app_made_count_as_pictures():
     for name in ("secret.png", "../test.db", "wallpaper-x.exe", "wallpaper-..\\x.png"):
         storage.set_setting(wallpaper.SETTING, json.dumps({"pattern": "picture", "picture": name}))
         assert wallpaper.current()["picture"] is None, name
+
+
+# --- Importing a picture ------------------------------------------------------
+
+@pytest.mark.parametrize(("data", "extension"), [(PNG, ".png"), (JPG, ".jpg"), (WEBP, ".webp")])
+def test_each_format_is_copied_into_the_data_folder(data, extension):
+    choice = wallpaper.import_picture(data)
+    copy = config.WALLPAPER_DIR / choice["picture"]
+    assert choice["pattern"] == wallpaper.PICTURE
+    assert copy.suffix == extension and copy.read_bytes() == data
+    assert wallpaper.current() == choice  # and it's remembered
+
+
+@pytest.mark.parametrize("data", [b"just some text, named photo.png", b"", b"GIF89a" + b"x" * 20])
+def test_anything_else_is_refused(data):
+    with pytest.raises(wallpaper.WallpaperError):
+        wallpaper.import_picture(data)
+    assert wallpaper.current()["picture"] is None
+
+
+def test_pictures_over_the_limit_are_refused(monkeypatch):
+    monkeypatch.setattr(config, "WALLPAPER_MAX_MB", 50 / 2**20)  # 50 bytes
+    with pytest.raises(wallpaper.WallpaperError) as refused:
+        wallpaper.import_picture(PNG)
+    assert refused.value.title == "That picture is too big"
+
+
+def test_a_new_picture_replaces_the_old_copy():
+    first = wallpaper.import_picture(PNG)["picture"]
+    second = wallpaper.import_picture(JPG)["picture"]
+    assert first != second
+    assert [path.name for path in config.WALLPAPER_DIR.iterdir()] == [second]
+
+
+def test_importing_the_same_picture_twice_keeps_it():
+    name = wallpaper.import_picture(PNG)["picture"]
+    assert wallpaper.import_picture(PNG)["picture"] == name
+    assert (config.WALLPAPER_DIR / name).is_file()
+
+
+def test_switching_to_a_pattern_keeps_the_picture_for_later():
+    name = wallpaper.import_picture(PNG)["picture"]
+    wallpaper.choose("dots")
+    assert wallpaper.current() == {"pattern": "dots", "dim": config.DEFAULT_WALLPAPER_DIM, "picture": name}
+    assert wallpaper.choose(wallpaper.PICTURE)["pattern"] == wallpaper.PICTURE
+
+
+def test_reset_deletes_the_copy_and_any_leftovers():
+    wallpaper.import_picture(PNG)
+    (config.WALLPAPER_DIR / "wallpaper-halfway.jpg.part").write_bytes(b"...")
+    (config.WALLPAPER_DIR / "notes.txt").write_text("not ours, so left alone")
+    wallpaper.reset()
+    assert [path.name for path in config.WALLPAPER_DIR.iterdir()] == ["notes.txt"]
+    assert wallpaper.current()["picture"] is None

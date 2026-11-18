@@ -1,5 +1,6 @@
 """The routes, exercised through Flask's test client. Steam itself is always faked."""
 
+import io
 import json
 
 import pytest
@@ -9,7 +10,7 @@ import app as app_module
 import config
 import demo
 import storage
-from conftest import FAKE_KEY, make_game, make_profile
+from conftest import FAKE_KEY, PNG, WEBP, make_game, make_profile
 
 ME = "76561198000000001"
 FRIEND = "76561198000000002"
@@ -252,3 +253,49 @@ def test_wallpaper_exe_is_in_the_start_menu_with_every_pattern(client):
     assert 'data-title="wallpaper.exe"' in page
     for key, label in config.WALLPAPER_PATTERNS.items():
         assert f'value="{key}"' in page and label in page
+
+
+def upload(client, data, filename="photo.png"):
+    return client.post("/wallpaper/picture", data={"picture": (io.BytesIO(data), filename)},
+                       content_type="multipart/form-data")
+
+
+def test_an_imported_picture_is_served_and_drawn_on_every_page(client):
+    reply = upload(client, PNG)
+    assert reply.status_code == 200
+    url = reply.json["picture_url"]
+    assert reply.json["pattern"] == "picture" and url.startswith("/wallpaper/picture/wallpaper-")
+
+    picture = client.get(url)
+    assert picture.status_code == 200
+    assert picture.mimetype == "image/png" and picture.data == PNG
+
+    page = client.get(DEMO_PAGE).text
+    assert 'class="wallpaper pattern--picture"' in page and f'src="{url}"' in page
+
+
+def test_a_webp_picture_gets_the_right_type(client):
+    url = upload(client, WEBP, "photo.webp").json["picture_url"]
+    assert client.get(url).mimetype == "image/webp"
+
+
+def test_a_file_that_isnt_a_picture_gets_a_popup_message(client):
+    reply = upload(client, b"not a picture at all", "sneaky.png")
+    assert reply.status_code == 400 and reply.json["title"]
+
+
+def test_importing_with_no_file_gets_a_popup_message(client):
+    reply = client.post("/wallpaper/picture", data={}, content_type="multipart/form-data")
+    assert reply.status_code == 400 and reply.json["message"]
+
+
+def test_a_huge_upload_is_stopped_before_it_is_read(client, monkeypatch):
+    monkeypatch.setitem(app_module.app.config, "MAX_CONTENT_LENGTH", 100)
+    reply = upload(client, PNG * 10)
+    assert reply.status_code == 413 and reply.json["title"] == "That picture is too big"
+
+
+def test_the_old_picture_stops_being_served_after_reset(client):
+    url = upload(client, PNG).json["picture_url"]
+    client.post("/wallpaper/reset")
+    assert client.get(url).status_code == 404

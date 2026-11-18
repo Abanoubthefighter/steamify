@@ -58,28 +58,85 @@ function openDialog() {
   const form = dialog.querySelector("[data-wallpaper-form]");
   showInDialog(saved);
   form.querySelector("input:checked")?.focus();
+
   form.addEventListener("change", onChange);
+  form.addEventListener("input", onSlide);
+  form.querySelector("[data-picture-pick]").addEventListener("click", () => {
+    form.querySelector("[data-picture-file]").click(); // opens Windows' own file picker
+  });
   form.querySelector("[data-wallpaper-reset]").addEventListener("click", () => save("/wallpaper/reset"));
 }
 
-/** Tick the current choice in wallpaper.exe (if it's open). */
-function showInDialog({ pattern, picture_url }) {
+/** Make wallpaper.exe (if it's open) match a wallpaper. */
+function showInDialog({ pattern, dim, picture_url }) {
   if (!dialog?.isConnected) return;
   const form = dialog.querySelector("[data-wallpaper-form]");
-  const pictureChoice = form.querySelector("[data-picture-choice]");
-  pictureChoice.hidden = !picture_url;
+
+  form.querySelector("[data-picture-choice]").hidden = !picture_url;
   if (picture_url) form.querySelector("[data-picture-thumb]").src = picture_url;
   const radio = form.querySelector(`input[name="pattern"][value="${CSS.escape(pattern)}"]`);
   if (radio) radio.checked = true;
+
+  // The slider only means something for a picture; patterns are never dimmed.
+  const slider = form.elements.dim;
+  slider.value = dim;
+  slider.disabled = pattern !== "picture";
+  form.querySelector("[data-dim-note]").hidden = !slider.disabled;
+  showDimValue(dim);
+}
+
+function showDimValue(dim) {
+  dialog.querySelector("[data-dim-value]").textContent = `${dim}%`;
 }
 
 function onChange(event) {
   const input = event.target;
-  if (input.name !== "pattern") return;
+  if ("pictureFile" in input.dataset) {
+    importPicture(input);
+  } else if (input.name === "pattern" || input.name === "dim") {
+    const body = new FormData();
+    body.set(input.name, input.value);
+    showOnDesktop({ ...saved, [input.name]: input.value }); // show it now, save it in the background
+    save("/wallpaper", body);
+  }
+}
+
+/** While the slider is dragged, dim the picture live. It's saved when it's let go (onChange). */
+function onSlide(event) {
+  if (event.target.name !== "dim") return;
+  const dim = Number(event.target.value);
+  showOnDesktop({ ...saved, dim });
+  showDimValue(dim);
+}
+
+async function importPicture(input) {
+  const file = input.files[0];
+  input.value = ""; // so picking the same file again still counts as a change
+  if (!file) return;
+
+  const maxBytes = Number(input.form.dataset.maxBytes);
+  if (file.size > maxBytes) {
+    showMessage({ heading: "That picture is too big", message: `Pick one under ${Math.round(maxBytes / 2 ** 20)} MB.` });
+    return;
+  }
+  // Check it really opens as a picture before sending it, so a broken file
+  // gives a clear message instead of an empty desktop.
+  try {
+    (await createImageBitmap(file)).close();
+  } catch {
+    showMessage({ heading: "That's not a picture the app can use", message: "Pick a PNG, JPG or WebP image." });
+    return;
+  }
+
+  const button = input.form.querySelector("[data-picture-pick]");
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = "Importing…";
   const body = new FormData();
-  body.set("pattern", input.value);
-  showOnDesktop({ ...saved, pattern: input.value }); // show it now, save it in the background
-  save("/wallpaper", body);
+  body.set("picture", file);
+  await save("/wallpaper/picture", body);
+  button.disabled = false;
+  button.textContent = label;
 }
 
 // --- Saving ------------------------------------------------------------------

@@ -18,6 +18,12 @@ import storage  # noqa: E402
 
 FAKE_KEY = "0123456789ABCDEF0123456789ABCDEF"
 
+# Just enough of each picture format for wallpaper.py's check: the signature
+# the format starts with, plus some bytes.
+PNG = b"\x89PNG\r\n\x1a\n" + b"png body" * 10
+JPG = b"\xff\xd8\xff\xe0" + b"jpg body" * 10
+WEBP = b"RIFF\x00\x00\x00\x00WEBPVP8 " + b"webp body" * 10
+
 
 @pytest.fixture(autouse=True)
 def isolated(tmp_path, monkeypatch):
