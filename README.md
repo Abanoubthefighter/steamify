@@ -12,7 +12,8 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Playtime history.** Steam only ever tells you lifetime totals, so the app logs the difference between scans and builds its own history from that.
 - **Top games, recent games and the full library**, sortable and searchable.
 - **warning.exe**: a stack of popups about your habits (how much of your library you never opened, that one game eating a third of your time).
-- **versus.exe**: compare with a friend, game by game.
+- **achievements.exe**: how many achievements you've unlocked across your games, your latest unlocks, the games you've nearly finished, and your rarest unlock (with the share of all players who have it).
+- **versus.exe**: compare with a friend, game by game, and on achievements in the games you both own.
 - **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
 
@@ -74,7 +75,7 @@ The profile you scan needs its **Game details** set to Public in Steam's privacy
 desktop.py     opens the native window (pywebview) and runs Flask behind it
 app.py         routes only
 api.py         everything that talks to Steam, plus friendly error messages
-sync.py        one scan: resolve the ID, fetch, save
+sync.py        one scan: resolve the ID, fetch, save, then achievements and rarity
 storage.py     SQLite: players, libraries and the play log
 stats.py       totals, sorting, searching (pure functions)
 charts.py      decides what each chart shows
@@ -88,7 +89,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
-tests/         171 tests, none of which go online
+tests/         216 tests; any that tried to reach Steam would fail
 ```
 
 A few decisions worth explaining:
@@ -96,6 +97,7 @@ A few decisions worth explaining:
 - **History without a history API.** Each scan compares the new totals with the saved ones and writes only the differences to a `play_log` table. A normal day adds a handful of rows instead of one per game owned. In a test with 3,000 games and 400 days of play the log held about 2,100 rows and the database was 360 KB.
 - **Saved data first, Steam second.** The dashboard is drawn from SQLite, so it opens straight away and works offline. If the data is older than 15 minutes the page asks for a fresh scan in the background.
 - **One connection to Steam.** A shared `requests.Session` keeps the connection open between calls. Measured here, the first call took about 600 ms and the following ones about 250 ms.
+- **Achievements without hammering Steam.** Steam has no "all my achievements" call, only one per game. So a scan only asks about games that have achievements (Steam flags those in the library) and that you've actually played. After that it only asks again about games whose playtime went up, because achievements only unlock while you play: a normal scan is a handful of calls, not one per game. It asks four games at a time, and if Steam says "slow down", the rest wait for the next scan instead of failing it. Rarity is fetched at most once a week per game, and icons only for the achievements on screen.
 - **Sorting lives in Python only.** The page asks the server for re-sorted rows as HTML instead of repeating the sort rules in JavaScript.
 - **An imported wallpaper is a copy.** The app checks the file's first bytes (not its name) to make sure it's really a PNG, JPG or WebP, then copies it into its data folder, so moving or deleting the original changes nothing. The copy is named after a fingerprint of its contents, so importing the same picture twice doesn't make a duplicate. The folder itself is the gallery: no list to keep in sync, and deleting a picture deletes its file. Pictures are sent to the window with `no-store`, so a deleted one doesn't linger in a cache either.
 - **Names from Steam are untrusted.** Templates escape everything, a Content-Security-Policy blocks inline scripts, and the local server refuses requests that didn't come from its own window.
@@ -107,7 +109,7 @@ On my machine the dashboard for a 3,000-game library renders in about 25 ms, and
 ## Making it yours
 
 - **Colours, fonts, outline thickness, spacing:** `static/css/theme.css`. Nothing else contains a colour, and the charts read theirs from the same file.
-- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number).
+- **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number, and for achievements: how many games to ask at once, what counts as "so close", how often rarity is refreshed).
 - **The jokes:** `captions.py`.
 - **A new wallpaper pattern:** add a name to `WALLPAPER_PATTERNS` in `config.py` and a `.pattern--<name>` rule in `style.css`. It shows up in wallpaper.exe, preview included. A drawing (like the default, Hills) also gets its shapes in `templates/partials/wallpaper_art.html`.
 - **The Hills colours, or how dim it is:** the `--hills-*` variables in `theme.css`. `--hills-dim: 0` shows it in full colour.
@@ -124,6 +126,7 @@ py -m pytest
 ## Known limits
 
 - History only starts when you first scan, and playtime is dated to the day of the scan that noticed it. Scan often and the chart gets finer.
+- The first scan of a big library takes a while longer, because achievements come one game per request. Later scans only ask about what you've played since.
 - Windows only for now. pywebview supports macOS and Linux, but the `.bat` files, the installer and the console and single-copy code in `desktop.py` are Windows things.
 - The installer and the .exe aren't code-signed (a certificate costs money every year), so Windows SmartScreen warns about them on other PCs.
 
