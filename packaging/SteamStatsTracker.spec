@@ -49,6 +49,8 @@ analysis = Analysis(
         (str(ROOT / "templates"), "templates"),
         (str(ROOT / "static"), "static"),
     ],
+    # pystray picks its Windows code by name while running, so name it here to be sure it's packed.
+    hiddenimports=["pystray._win32"],
 )
 
 exe = EXE(

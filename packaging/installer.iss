@@ -46,6 +46,11 @@ SolidCompression=yes
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Messages]
+; The app may be open with no window at all, hidden in the tray, so say where to find it.
+SetupAppRunningError=%1 is still running, maybe hidden in the tray next to the clock.%n%nRight-click its icon there and choose Quit, then click OK to carry on (or Cancel to stop).
+UninstallAppRunningError=%1 is still running, maybe hidden in the tray next to the clock.%n%nRight-click its icon there and choose Quit, then click OK to carry on (or Cancel to stop).
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
