@@ -78,7 +78,7 @@ begin
   if not DirExists(DataDir) or UninstallSilent() then
     Exit;
   if MsgBox('Also delete your saved data?' #13#13
-      'That''s your play history, your Steam API key and your wallpaper picture. Keep them if you might install the app again.',
+      'That''s your play history, your Steam API key and your wallpaper pictures. Keep them if you might install the app again.',
       mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
     DelTree(DataDir, True, True, True);
 end;

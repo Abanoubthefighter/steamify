@@ -13,7 +13,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **Top games, recent games and the full library**, sortable and searchable.
 - **warning.exe**: a stack of popups about your habits (how much of your library you never opened, that one game eating a third of your time).
 - **versus.exe**: compare with a friend, game by game.
-- **wallpaper.exe**: swap the desktop pattern, or import your own picture and dim it so the windows stay readable. It's under Start > Change wallpaper.
+- **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
 
 [Full-page screenshot](docs/dashboard-full.png)
@@ -55,7 +55,7 @@ Without Inno Setup you still get the folder. A few things worth knowing:
 - **The .exe needs its `_internal` folder.** That's where Python itself lives. Copy `SteamStatsTracker.exe` somewhere on its own and it stops with "Failed to load Python DLL". The installer exists so nobody has to know that.
 - **Why a folder and not one big .exe.** A single-file build unpacks itself into a temp folder on every start. Measured here, it opened in 1.1 s against 0.7 s for the folder, and it leaves those temp folders behind if it's ever killed.
 - **The version number** lives in `config.py` as `APP_VERSION`. The .exe's Properties tab, the About box and the installer's file name all read it from there.
-- The installed app keeps its database, its `.env` and your wallpaper picture in `%LOCALAPPDATA%\SteamStatsTracker`, not next to the program, which is why updates don't touch them.
+- The installed app keeps its database, its `.env` and your wallpaper pictures in `%LOCALAPPDATA%\SteamStatsTracker`, not next to the program, which is why updates don't touch them.
 
 ## Using your own Steam data
 
@@ -80,7 +80,7 @@ stats.py       totals, sorting, searching (pure functions)
 charts.py      decides what each chart shows
 captions.py    the jokes in the warning popups
 demo.py        the made-up player
-wallpaper.py   the wallpaper choice and the imported picture
+wallpaper.py   the wallpaper choice and the imported pictures
 config.py      every setting in one place
 run.bat        sets things up on the first run, then opens the app
 build_exe.bat  builds the app and its installer
@@ -88,7 +88,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
-tests/         162 tests, none of which go online
+tests/         171 tests, none of which go online
 ```
 
 A few decisions worth explaining:
@@ -97,7 +97,7 @@ A few decisions worth explaining:
 - **Saved data first, Steam second.** The dashboard is drawn from SQLite, so it opens straight away and works offline. If the data is older than 15 minutes the page asks for a fresh scan in the background.
 - **One connection to Steam.** A shared `requests.Session` keeps the connection open between calls. Measured here, the first call took about 600 ms and the following ones about 250 ms.
 - **Sorting lives in Python only.** The page asks the server for re-sorted rows as HTML instead of repeating the sort rules in JavaScript.
-- **An imported wallpaper is a copy.** The app checks the file's first bytes (not its name) to make sure it's really a PNG, JPG or WebP, then copies it into its data folder, so moving or deleting the original changes nothing. The copy is named after a fingerprint of its contents, which means a new picture never shows up as the old one from the cache.
+- **An imported wallpaper is a copy.** The app checks the file's first bytes (not its name) to make sure it's really a PNG, JPG or WebP, then copies it into its data folder, so moving or deleting the original changes nothing. The copy is named after a fingerprint of its contents, so importing the same picture twice doesn't make a duplicate. The folder itself is the gallery: no list to keep in sync, and deleting a picture deletes its file. Pictures are sent to the window with `no-store`, so a deleted one doesn't linger in a cache either.
 - **Names from Steam are untrusted.** Templates escape everything, a Content-Security-Policy blocks inline scripts, and the local server refuses requests that didn't come from its own window.
 - **Errors are written for people.** Bad key, private profile, timeout, no connection: each one is its own exception with a title and message that go straight into a popup. The API key is kept out of error text on purpose.
 - **One copy at a time.** On start the app claims a named Windows mutex. If a copy already holds it, the new one brings that window forward and quits, so a double double-click doesn't give you two windows writing to the same database. The installer checks the same name and asks you to close the app before it updates or removes it.
