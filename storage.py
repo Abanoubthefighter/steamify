@@ -507,6 +507,13 @@ def get_achievement_coverage(steam_id: str) -> dict:
     return {**dict(row), "private": bool(row["private"])}
 
 
+def has_shared_achievements(steam_id: str) -> bool:
+    """True if Steam ever answered with achievements for this player (any game that has some)."""
+    with open_db() as db:
+        row = db.execute("SELECT 1 FROM achievement_games WHERE steam_id = ? AND total > 0 LIMIT 1", (steam_id,)).fetchone()
+    return row is not None
+
+
 def mark_achievements_private(steam_id: str, now: float | None = None) -> None:
     """Remember that Steam wouldn't share this player's achievements.
 

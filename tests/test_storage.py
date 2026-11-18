@@ -305,3 +305,11 @@ def test_missing_icons():
     assert storage.is_missing_icons(1)
     storage.save_achievement_icons(1, {"A1_0": "https://example.test/0.jpg", "A1_1": "https://example.test/1.jpg"})
     assert not storage.is_missing_icons(1)
+
+
+def test_has_shared_achievements():
+    owns("me", make_game(1, "Hades", hours=40), make_game(2, "Garry's Mod", hours=3))
+    storage.save_achievements("me", 2, 180, [])
+    assert not storage.has_shared_achievements("me")  # "has none" isn't sharing
+    storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=0, locked=3))
+    assert storage.has_shared_achievements("me")

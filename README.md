@@ -101,7 +101,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         304 tests; none can reach Steam or the real registry
+tests/         307 tests; none can reach Steam or the real registry
 ```
 
 A few decisions worth explaining:

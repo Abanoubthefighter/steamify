@@ -186,16 +186,26 @@ def test_if_steam_keeps_saying_slow_down_the_rest_wait_for_the_next_scan(achieve
     assert storage.get_achievement_summary(ME)["checked"] == 0
 
 
-def test_private_achievements_stop_the_check_at_once(achievements, waits, monkeypatch):
+def test_a_player_who_never_shared_and_refuses_everything_is_private(achievements, waits):
     asked, answers, _ = achievements
-    monkeypatch.setattr(sync.config, "ACHIEVEMENT_WORKERS", 1)
-    answers[10] = api.PrivateAchievements()
-    answers[40] = api.PrivateAchievements()
+    for app_id in answers:
+        answers[app_id] = api.PrivateAchievements()
     events = list(sync.scan("tester"))
     assert events[-1]["steam_id"] == ME
     assert waits == []  # no point waiting: Steam won't change its mind in a few seconds
-    assert storage.get_achievement_summary(ME)["checked"] == 0
+    assert storage.get_achievement_summary(ME)["checked"] == 0  # nothing saved, so the next scan asks again
     assert storage.get_achievement_coverage(ME)["private"] is True
+
+
+def test_refusing_game_after_game_stops_early(achievements, monkeypatch):
+    asked, answers, library = achievements
+    monkeypatch.setattr(sync.config, "NOT_PUBLIC_GIVE_UP", 2)
+    monkeypatch.setattr(sync.config, "ACHIEVEMENT_WORKERS", 1)
+    for app_id in answers:
+        answers[app_id] = api.PrivateAchievements()
+    list(sync.scan("tester"))
+    assert storage.get_achievement_coverage(ME)["private"] is True
+    assert len(asked) <= 3  # 2 refusals, plus at most one call already on its way
 
 
 def test_games_to_check():
@@ -262,10 +272,26 @@ def test_not_public_for_an_unflagged_game_only_means_that_game(achievements):
     assert storage.get_achievement_summary(ME)["games"] == 2  # the two real ones still count
 
 
-def test_a_profile_that_went_private_is_noticed_even_when_its_old_numbers_are_saved(achievements, monkeypatch):
+def test_what_happened_on_a_real_profile(achievements):
+    """Some games shared their achievements, the rest (flagged or not) answered "not public"."""
+    asked, answers, library = achievements
+    answers[20] = api.PrivateAchievements()
+    del answers[40]
+    library[:] = library[:3]  # 10 shares, 20 refuses
+    list(sync.scan("tester"))
+    library.append(make_game(50, "Flagged, refuses", hours=3, has_stats=True))
+    answers[50] = api.PrivateAchievements()
+    list(sync.scan("tester", force=True))  # only 50 is new: it refuses, nothing else answers
+    coverage = storage.get_achievement_coverage(ME)
+    assert coverage["private"] is False  # 10 shared before, so the profile isn't private
+    assert coverage["waiting"] == 0  # 20 and 50 are noted as checked, nothing to see
+
+
+def test_a_game_that_refuses_later_keeps_what_it_had(achievements):
     asked, answers, library = achievements
     list(sync.scan("tester"))
-    library[0]["minutes"] += 30  # played a flagged game since
+    library[0]["minutes"] += 30  # played game 10 since
     answers[10] = api.PrivateAchievements()
     list(sync.scan("tester", force=True))
-    assert storage.get_achievement_coverage(ME)["private"] is True
+    assert storage.get_achievement_summary(ME)["unlocked"] == 5  # 10's three unlocks are still there
+    assert storage.get_achievement_coverage(ME)["private"] is False

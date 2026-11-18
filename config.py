@@ -100,6 +100,7 @@ MAX_ALERTS = 5
 ACHIEVEMENT_WORKERS = 4     # games asked about at the same time during a scan (Steam has one call per game)
 SLOW_DOWN_RETRIES = 3       # if Steam says "slow down" mid-scan, wait and carry on (one game at a time) this many times
 SLOW_DOWN_SECONDS = 5       # the first wait; the second is twice as long, and so on
+NOT_PUBLIC_GIVE_UP = 10     # a player who never shared an achievement and refuses this many games counts as private
 NEARLY_DONE_PERCENT = 80    # "so close": at least this much of a game's achievements, but not all
 NEARLY_DONE_COUNT = 3       # games listed under "so close"
 RECENT_UNLOCKS_COUNT = 4    # latest unlocks listed

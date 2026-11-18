@@ -114,10 +114,18 @@ def check_achievements(steam_id: str, games: list[dict]):
     time, a few times over (config.SLOW_DOWN_RETRIES), before leaving the
     rest for the next scan. Before, it gave up at the first "slow down",
     and a big library could stay half-checked for a long time.
+
+    Steam also answers "Profile is not public" for some games on a perfectly
+    public profile (seen on a real one, flagged games included). So that
+    answer only means "this game", see _settle_refused. A player only counts
+    as private if they never shared a single achievement and keep refusing.
     """
-    todo = games_to_check(games, storage.get_checked_minutes(steam_id))
+    checked = storage.get_checked_minutes(steam_id)
+    todo = games_to_check(games, checked)
     waiting = list(todo)
     done = 0
+    refused = []  # games Steam answered "not public" for
+    shared = storage.has_shared_achievements(steam_id)  # becomes True as soon as any game answers
 
     def ask(game: dict) -> list[dict]:
         return api.get_achievements(steam_id, game["app_id"])
@@ -131,23 +139,21 @@ def check_achievements(steam_id: str, games: list[dict]):
         answers = _a_few_at_a_time(ask, waiting, workers)
         try:
             for game, answer in answers:
-                if isinstance(answer, api.PrivateAchievements) and not game.get("has_stats"):
-                    # For a game Steam doesn't flag, "not public" only means its achievements
-                    # aren't shown to anyone (found on a real profile): save it as "has none".
-                    answer = []
-                elif isinstance(answer, api.PrivateAchievements):
-                    # For a flagged game it really is the profile: private for one game means
-                    # private for all of them. Remembered, so achievements.exe can say why
-                    # it's empty (or out of date). Flagged games go first, so this shows early.
-                    storage.mark_achievements_private(steam_id)
-                    return
                 if isinstance(answer, api.RateLimited):
                     slowed_down = True
                     break  # closing `answers` cancels the calls that haven't gone out yet
-                if isinstance(answer, api.SteamError):
+                if isinstance(answer, api.PrivateAchievements):
+                    refused.append(game)
+                    if not shared and len(refused) >= config.NOT_PUBLIC_GIVE_UP:
+                        # Game after game refused, and this player never shared one achievement:
+                        # it really is the profile. No point asking about the rest.
+                        storage.mark_achievements_private(steam_id)
+                        return
+                elif isinstance(answer, api.SteamError):
                     if not isinstance(answer, SKIPPABLE):
                         raise answer
                 else:
+                    shared = True
                     # Saved here, on this thread, so only one thread ever writes to the database.
                     storage.save_achievements(steam_id, game["app_id"], game["minutes"], answer)
                 waiting.remove(game)
@@ -156,7 +162,27 @@ def check_achievements(steam_id: str, games: list[dict]):
         finally:
             answers.close()
         if not slowed_down:
-            return
+            break
+    _settle_refused(steam_id, refused, checked, shared)
+
+
+def _settle_refused(steam_id: str, refused: list[dict], checked: dict[int, int], shared: bool) -> None:
+    """What the "not public" answers of one check mean.
+
+    A player who has shared achievements before (or did in this check) isn't
+    private: those games just don't show theirs. A refused game that was
+    never answered before is saved as checked with none, so it isn't waiting
+    forever; one that has saved achievements keeps them. A player who never
+    shared any and refused everything this time is remembered as private.
+    """
+    if not refused:
+        return
+    if not shared:
+        storage.mark_achievements_private(steam_id)
+        return
+    for game in refused:
+        if game["app_id"] not in checked:
+            storage.save_achievements(steam_id, game["app_id"], game["minutes"], [])
 
 
 def check_rarity(steam_id: str):
