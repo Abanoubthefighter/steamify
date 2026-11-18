@@ -5,6 +5,7 @@
   the slider position and the picture preview are filled in by
   static/js/wallpaper.js when the window opens.
 #}
+{% from "partials/wallpaper_art.html" import art %}
 <template data-popup="wallpaper" data-title="wallpaper.exe" data-color="sand">
   <form class="wallpaper-form" data-wallpaper-form data-max-bytes="{{ wallpaper_max_mb * 1024 * 1024 }}">
     <fieldset class="radios patterns">
@@ -12,7 +13,7 @@
       {% for key, label in wallpaper_patterns.items() %}
       <label>
         <input type="radio" name="pattern" value="{{ key }}">
-        <span class="swatch" aria-hidden="true"><span class="swatch__pattern pattern--{{ key }}"></span></span>
+        <span class="swatch" aria-hidden="true"><span class="swatch__pattern pattern--{{ key }}">{{ art(key) }}</span></span>
         {{ label }}
       </label>
       {% endfor %}

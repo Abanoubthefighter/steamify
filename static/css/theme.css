@@ -74,6 +74,13 @@
   --wallpaper-check: 24px;         /* checker: size of one square */
   --wallpaper-dim-color: var(--ink);  /* what the dim slider darkens a picture towards */
 
+  /* Hills, the default wallpaper: a little drawing of a sunny landscape. */
+  --hills-sky: #7ec8f0;
+  --hills-sun: #ffd34d;
+  --hills-left: #5aa84f;     /* the hill further back */
+  --hills-right: #3f8a3a;    /* the hill in front */
+  --hills-dim: 0.3;          /* 0 = full colour, higher = darker, towards --wallpaper-dim-color */
+
   /* --- Type ---------------------------------------------------------------- */
   --font-ui: "Fredoka", "Segoe UI", sans-serif;          /* titles, buttons, numbers */
   --font-body: "Josefin Sans", "Segoe UI", sans-serif;   /* everything else */

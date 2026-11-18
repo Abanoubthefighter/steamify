@@ -1,3 +1,4 @@
+{% from "partials/wallpaper_art.html" import art %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +18,7 @@
   {% set wp = wallpaper() %}
   <div class="wallpaper pattern--{{ wp.pattern }}" data-wallpaper data-dim="{{ wp.dim }}" aria-hidden="true"
        style="--wallpaper-dim: {{ wp.dim / 100 }}">
+    {{ art("hills") }}
     {% if wp.picture_url %}
     <img class="wallpaper__picture" src="{{ wp.picture_url }}" alt="" data-wallpaper-picture>
     {% endif %}

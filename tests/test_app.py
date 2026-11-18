@@ -299,3 +299,8 @@ def test_the_old_picture_stops_being_served_after_reset(client):
     url = upload(client, PNG).json["picture_url"]
     client.post("/wallpaper/reset")
     assert client.get(url).status_code == 404
+
+
+def test_the_hills_drawing_is_on_every_page_and_in_its_preview(client):
+    for page in (client.get(DEMO_PAGE).text, client.get("/player/nobody").text):
+        assert page.count('class="wallpaper__art art--hills"') == 2  # the desktop + the preview in wallpaper.exe

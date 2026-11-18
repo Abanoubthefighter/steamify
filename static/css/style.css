@@ -166,6 +166,50 @@ a {
   background: var(--bg);
 }
 
+/* Drawings (templates/partials/wallpaper_art.html) sit inside the wallpaper
+   and inside their preview, and only show under their own pattern class. */
+.wallpaper__art {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hills: the sky colour underneath means no orange flash while it draws.
+   The see-through layer on top is the same idea as the picture's dim. */
+.pattern--hills {
+  background: var(--hills-sky);
+}
+
+.pattern--hills > .art--hills {
+  display: block;
+}
+
+.pattern--hills::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--wallpaper-dim-color);
+  opacity: var(--hills-dim);
+}
+
+.hills__sky {
+  fill: var(--hills-sky);
+}
+
+.hills__sun {
+  fill: var(--hills-sun);
+}
+
+.hills__left {
+  fill: var(--hills-left);
+}
+
+.hills__right {
+  fill: var(--hills-right);
+}
+
 /* The user's own picture: scaled to cover the whole screen (cropped, never
    stretched), with a see-through layer on top that the dim slider controls. */
 .wallpaper__picture {
@@ -1286,6 +1330,7 @@ li:last-child > .row {
 /* The real pattern, drawn three times as big and shrunk to a third, so the
    preview shows a little of the whole wallpaper rather than one corner. */
 .swatch__pattern {
+  position: relative; /* so a drawing's dim layer stays inside the preview */
   display: block;
   width: 300%;
   height: 300%;

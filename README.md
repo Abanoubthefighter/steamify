@@ -109,7 +109,8 @@ On my machine the dashboard for a 3,000-game library renders in about 25 ms, and
 - **Colours, fonts, outline thickness, spacing:** `static/css/theme.css`. Nothing else contains a colour, and the charts read theirs from the same file.
 - **Behaviour:** `config.py` (how many top games, cache time, chart ranges, alert thresholds, window size, version number).
 - **The jokes:** `captions.py`.
-- **A new wallpaper pattern:** add a name to `WALLPAPER_PATTERNS` in `config.py` and a `.pattern--<name>` rule in `style.css`. It shows up in wallpaper.exe, preview included.
+- **A new wallpaper pattern:** add a name to `WALLPAPER_PATTERNS` in `config.py` and a `.pattern--<name>` rule in `style.css`. It shows up in wallpaper.exe, preview included. A drawing (like the default, Hills) also gets its shapes in `templates/partials/wallpaper_art.html`.
+- **The Hills colours, or how dim it is:** the `--hills-*` variables in `theme.css`. `--hills-dim: 0` shows it in full colour.
 - **A new sort order:** add one function and one line to `SORT_ORDERS` in `stats.py`. The radio button appears on its own.
 - **Window order:** reorder the `include` lines in `templates/dashboard.html`.
 

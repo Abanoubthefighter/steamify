@@ -91,15 +91,17 @@ MAX_ALERTS = 5
 
 # --- Wallpaper (wallpaper.exe) -----------------------------------------------
 
-# The built-in patterns: key -> name shown in wallpaper.exe. Each key has a
+# The built-in wallpapers: key -> name shown in wallpaper.exe. Each key has a
 # .pattern--<key> rule in style.css that draws it (colours in theme.css).
+# Drawings like "hills" also have their shapes in partials/wallpaper_art.html.
 WALLPAPER_PATTERNS = {
+    "hills": "Hills",
     "sunburst": "Sunburst",
     "dots": "Halftone dots",
     "checker": "Soft checker",
     "plain": "Plain orange",
 }
-DEFAULT_WALLPAPER = "sunburst"
+DEFAULT_WALLPAPER = "hills"
 WALLPAPER_MAX_MB = 25       # biggest picture that can be imported
 DEFAULT_WALLPAPER_DIM = 30  # percent the dim slider starts at
 WALLPAPER_DIM_MAX = 80      # percent; past this a picture is barely there

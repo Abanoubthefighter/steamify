@@ -1,0 +1,20 @@
+{#
+  Wallpapers that are little drawings rather than repeating patterns. Each
+  is an inline SVG, so it stays sharp at any size and its colours can come
+  from theme.css. The same drawing is used on the desktop and as its
+  preview in wallpaper.exe; CSS only shows it under its own .pattern--<name>.
+
+      {{ art("hills") }}   draws the hills, art("anything else") draws nothing
+#}
+{% macro art(pattern) %}
+{% if pattern == "hills" %}
+{# The first landscape: a 1600 x 900 scene, scaled to fill the screen like a photo would. #}
+<svg class="wallpaper__art art--hills" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"
+     aria-hidden="true" focusable="false">
+  <rect class="hills__sky" width="1600" height="900"/>
+  <circle class="hills__sun" cx="1250" cy="220" r="110"/>
+  <ellipse class="hills__left" cx="400" cy="900" rx="700" ry="330"/>
+  <ellipse class="hills__right" cx="1300" cy="950" rx="650" ry="300"/>
+</svg>
+{% endif %}
+{% endmacro %}
