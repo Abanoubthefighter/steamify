@@ -44,6 +44,34 @@ export function initScan() {
 
   // The server sets this when the saved data is getting old: refresh quietly in the background.
   if (desktop.dataset.autosync === "true") runScan(playersOnScreen({ force: false }), { quiet: true });
+  watchForNewData();
+}
+
+// --- Data saved by the background sync ---------------------------------------
+
+const NEW_DATA_CHECK = 60_000; // ms between "anything new?" questions to the server
+
+/**
+ * The desktop app syncs on its own about once an hour (background.py), also
+ * while this page sits open. Now and then ask the server for a short stamp of
+ * the numbers (games, minutes, unlocks), and when it no longer matches the
+ * page, put a chip in the taskbar. Reloading by surprise would be rude.
+ */
+function watchForNewData() {
+  const chip = document.querySelector("[data-fresh-data]");
+  const shown = ui.desktop.dataset.stamp;
+  if (!chip || !shown) return;
+  chip.addEventListener("click", () => window.location.reload());
+
+  setInterval(async () => {
+    if (running || !chip.hidden) return; // a scan on this page reloads by itself; the chip is up already
+    try {
+      const reply = await fetch(`${ui.desktop.dataset.base}/stamp`);
+      if (reply.ok && (await reply.json()).stamp !== shown) chip.hidden = false;
+    } catch {
+      // The server is busy or gone for a moment. Ask again next time.
+    }
+  }, NEW_DATA_CHECK);
 }
 
 /** The form fields for "scan whoever is on screen right now". */

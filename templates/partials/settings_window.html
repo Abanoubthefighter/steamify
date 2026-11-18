@@ -1,6 +1,7 @@
 {#
   settings.exe: a floating window, opened from the start menu (System >
-  Settings). The settings themselves live in preferences.py; static/js/settings.js
+  Settings). The settings themselves live in preferences.py (the background
+  sync itself in background.py); static/js/settings.js
   ticks the boxes from the data below and saves each change straight away.
 #}
 <template data-popup="settings" data-title="settings.exe">
@@ -10,10 +11,16 @@
       <label><input type="checkbox" name="keep_running"> Keep running in the tray</label>
       <p class="note">The app stays next to the clock. Click its icon to open it again, right-click it to quit.
         Start &gt; Shut down always quits.</p>
-      {% if not desktop_app %}
-      <p class="note note--warning">This only does something in the desktop app, not in a browser tab.</p>
-      {% endif %}
     </fieldset>
+    <fieldset class="checks">
+      <legend class="label">While the app is running</legend>
+      <label><input type="checkbox" name="background_sync"> Sync every {{ background_sync_minutes | every }}</label>
+      <p class="note">Every saved player, in the window or in the tray, so the playtime history fills in
+        on its own. Needs a Steam API key. The tray icon's Sync now does it straight away.</p>
+    </fieldset>
+    {% if not desktop_app %}
+    <p class="note note--warning">These only do something in the desktop app, not in a browser tab.</p>
+    {% endif %}
     <div class="btn-row">
       <button class="btn btn--small" type="button" data-action="close">Done</button>
     </div>

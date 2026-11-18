@@ -8,6 +8,7 @@ import pytest
 
 import api
 import app as app_module
+import background
 import config
 import demo
 import storage
@@ -554,6 +555,33 @@ def test_a_setting_only_takes_on_or_off(client):
 
 
 def test_settings_exe_says_when_the_tray_does_nothing(client, monkeypatch):
-    assert "only does something in the desktop app" in client.get(DEMO_PAGE).text
+    assert "only do something in the desktop app" in client.get(DEMO_PAGE).text
     monkeypatch.setitem(app_module.app.config, "DESKTOP_APP", True)
-    assert "only does something in the desktop app" not in client.get(DEMO_PAGE).text
+    assert "only do something in the desktop app" not in client.get(DEMO_PAGE).text
+
+
+# --- background sync on the page ---
+
+
+def test_the_stamp_only_changes_when_the_numbers_do(client, steam, monkeypatch):
+    scan(client, player="me")
+    first = client.get(f"/player/{ME}/stamp").get_json()["stamp"]
+    assert f'data-stamp="{first}"' in client.get(f"/player/{ME}").text
+    scan(client, player="me", force="1")  # a sync where nothing was played
+    assert client.get(f"/player/{ME}/stamp").get_json()["stamp"] == first
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [make_game(730, "Counter-Strike 2", hours=11)])
+    scan(client, player="me", force="1")
+    assert client.get(f"/player/{ME}/stamp").get_json()["stamp"] != first
+
+
+def test_sync_exe_says_what_the_last_background_round_did(client, steam):
+    scan(client, player="me")
+    storage.set_setting(background.LAST_RUN, json.dumps({"at": 1_000, "synced": 3, "failed": 1, "problem": "Steam is down"}))
+    assert "Synced in the background" in client.get(f"/player/{ME}").text and "3 players, 1 couldn" in client.get(f"/player/{ME}").text
+    storage.set_setting(background.LAST_RUN, json.dumps({"at": 1_000, "synced": 0, "failed": 2, "problem": "Steam is down"}))
+    assert "couldn't finish: Steam is down" in client.get(f"/player/{ME}").text
+
+
+def test_settings_exe_offers_the_background_sync(client):
+    page = client.get(DEMO_PAGE).text
+    assert 'name="background_sync"' in page and "Sync every hour" in page

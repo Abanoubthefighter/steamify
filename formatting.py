@@ -65,6 +65,13 @@ def time_ago(timestamp: int | None, now: float | None = None) -> str:
     return f"{plural(int(seconds // (365 * DAY)), 'year')} ago"
 
 
+def every(minutes: int) -> str:
+    """60 -> "hour", 120 -> "2 hours", 30 -> "30 minutes", for "Sync every ..."."""
+    if minutes % 60:
+        return plural(minutes, "minute")
+    return "hour" if minutes == 60 else plural(minutes // 60, "hour")
+
+
 def last_played(game: dict, now: float | None = None) -> str:
     """When a game was last opened, in words. Steam has no date for some very old sessions."""
     if game["last_played"]:

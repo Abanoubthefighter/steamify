@@ -8,7 +8,8 @@
       data-player="{{ player.steam_id }}"
       data-friend="{{ friend.steam_id if friend }}"
       data-base="{{ url_for('dashboard', steam_id=player.steam_id) }}"
-      data-autosync="{{ 'true' if autosync else 'false' }}">
+      data-autosync="{{ 'true' if autosync else 'false' }}"
+      data-stamp="{{ stamp }}">
   <h1 class="sr-only">Steam stats for {{ player.name }}</h1>
 
   {# One file per window. Reorder these lines to rearrange the desktop. #}
@@ -28,6 +29,8 @@
 {% block chips %}
 <span class="chip">{{ summary.game_count | plural("game") }}</span>
 <span class="chip chip--roomy">{{ summary.recent_minutes | hours }} this fortnight</span>
+{# Shown by static/js/scan.js when a background sync saved newer data than what's on screen. #}
+<button class="chip chip--fresh" type="button" data-fresh-data hidden>New data: show it</button>
 {% endblock %}
 
 {% block templates %}

@@ -25,6 +25,7 @@ from flask import (
 )
 
 import api
+import background
 import captions
 import charts
 import config
@@ -79,6 +80,7 @@ def store_url(game: dict) -> str | None:
 app.jinja_env.filters.update(
     hours=formatting.hours,
     ago=formatting.time_ago,
+    every=formatting.every,
     plural=formatting.plural,
     number=formatting.number,
     share=formatting.share,
@@ -106,6 +108,7 @@ def template_globals() -> dict:
         "wallpaper_max_mb": config.WALLPAPER_MAX_MB,
         "wallpaper_dim_max": config.WALLPAPER_DIM_MAX,
         "preferences": preferences.current,  # a function, for the same reason as wallpaper
+        "background_sync_minutes": config.BACKGROUND_SYNC_MINUTES,
         # desktop.py sets this. In a browser tab there's no tray, so settings.exe says so.
         "desktop_app": app.config.get("DESKTOP_APP", False),
     }
@@ -177,7 +180,26 @@ def dashboard(steam_id: str):
         # Saved data goes on screen straight away. If it's old, the page asks
         # for a fresh scan in the background once it has loaded.
         autosync=config.AUTO_SYNC and not is_demo and bool(config.STEAM_API_KEY) and not sync.is_fresh(player),
+        background_round=background.last_round(),
+        stamp=_data_stamp(games, steam_id),
     )
+
+
+@app.get("/player/<steam_id>/stamp")
+def data_stamp(steam_id: str):
+    """A short summary of this player's numbers. The page asks now and then to spot a background sync."""
+    storage.get_player(steam_id) or abort(404)
+    return jsonify(stamp=_data_stamp(storage.get_library(steam_id), steam_id))
+
+
+def _data_stamp(games: list[dict], steam_id: str) -> str:
+    """Games owned, minutes played, achievements unlocked: "137-147060-512".
+
+    It only changes when something on screen would. The time of the last sync
+    alone wouldn't do: every hourly sync changes it, even when nothing was played.
+    """
+    unlocked = storage.get_achievement_summary(steam_id)["unlocked"]
+    return f"{len(games)}-{sum(game['minutes'] for game in games)}-{unlocked}"
 
 
 @app.get("/player/<steam_id>/library")

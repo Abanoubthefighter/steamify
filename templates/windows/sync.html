@@ -18,5 +18,15 @@
     <span class="progress__fill"></span>
   </div>
   <button class="btn" type="button" data-sync-button>Sync now</button>
+  {% if background_round and not is_demo %}
+  {# What the hourly background sync (background.py) did last time. #}
+  <p class="note">
+    {% if background_round.failed and not background_round.synced %}
+    The background sync {{ background_round.at | ago }} couldn't finish: {{ background_round.problem }}. It tries again later.
+    {% else %}
+    Synced in the background {{ background_round.at | ago }}: {{ background_round.synced | plural("player") }}{% if background_round.failed %}, {{ background_round.failed }} couldn't be reached{% endif %}.
+    {% endif %}
+  </p>
+  {% endif %}
 </div>
 {% endcall %}

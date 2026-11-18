@@ -1,5 +1,7 @@
 """background.py: which players get synced on a timer, with Steam faked."""
 
+import threading
+
 import pytest
 
 import api
@@ -82,3 +84,20 @@ def test_a_player_who_failed_waits_a_whole_interval(steam, monkeypatch):
 def test_last_round_ignores_junk():
     storage.set_setting(background.LAST_RUN, "not json")
     assert background.last_round() is None
+
+
+def test_sync_now_wakes_the_thread_for_a_round_with_everyone(monkeypatch):
+    rounds = []
+    done = threading.Event()
+
+    def fake_round(everyone=False, failed_at=None, now=None):
+        rounds.append(everyone)
+        done.set()
+
+    monkeypatch.setattr(background, "sync_round", fake_round)
+    monkeypatch.setattr(config, "BACKGROUND_CHECK_MINUTES", 60)  # the timer alone wouldn't fire during the test
+    syncing = background.BackgroundSync()
+    syncing.start()
+    syncing.sync_now()
+    assert done.wait(timeout=5)
+    assert rounds == [True]

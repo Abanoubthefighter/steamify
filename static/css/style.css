@@ -1885,6 +1885,19 @@ h4.trophy-game__label {
   color: var(--cream);
 }
 
+/* "New data: show it": a background sync saved something newer than the page shows. */
+.chip--fresh {
+  background: var(--red);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+
+.chip--fresh:hover {
+  background: var(--sand);
+  color: var(--ink);
+}
+
 .taskbar__spacer {
   flex: 1;
 }
