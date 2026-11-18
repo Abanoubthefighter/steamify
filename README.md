@@ -20,6 +20,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
 - **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
 - **Lives in the tray**, like Steam or Discord. Closing the window hides it next to the clock instead of quitting (the first time, Windows shows a short notice saying so). Click the icon to bring the window back; right-click it, or use Start > Shut down, to quit. Prefer the old way? Untick "Keep running in the tray" in Start > Settings.
+- **Starts with Windows, if you want it to.** Tick "Start with Windows, in the tray" in Start > Settings and the app starts hidden next to the clock when you log in, so the hourly sync runs without you opening anything. It's off until you turn it on, and only the installed app offers it.
 - **Syncs by itself.** While the app is open, in the window or in the tray, it syncs every saved player about once an hour, so the playtime history fills in without you remembering to open it. Right-click the tray icon for Sync now. sync.exe says when the last background sync ran, and if it brought new numbers while you were looking, a "New data" button shows up in the taskbar. You can switch it off in Start > Settings.
 
 [Full-page screenshot](docs/dashboard-full.png) · [trophies.exe](docs/trophies.png)
@@ -30,7 +31,7 @@ Run `SteamStatsTracker-1.2.0-Setup.exe` (see [Building the installer](#building-
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
 - To update, run the newer installer. Your play history and API key stay. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
-- To remove it, use **Settings > Apps > Installed apps**. It asks whether to delete your saved data too.
+- To remove it, use **Settings > Apps > Installed apps**. It asks whether to delete your saved data too, and takes the app off the programs Windows starts at login.
 
 ## Running it from source
 
@@ -90,6 +91,7 @@ wallpaper.py   the wallpaper choice and the imported pictures
 tray.py        the icon next to the clock, and what closing the window does
 background.py  the hourly sync while the app is open
 preferences.py the settings in settings.exe
+startup.py     Start with Windows: one value in the registry's Run list
 config.py      every setting in one place
 run.bat        sets things up on the first run, then opens the app
 build_exe.bat  builds the app and its installer
@@ -97,13 +99,14 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         281 tests; any that tried to reach Steam would fail
+tests/         289 tests; none can reach Steam or the real registry
 ```
 
 A few decisions worth explaining:
 
 - **History without a history API.** Each scan compares the new totals with the saved ones and writes only the differences to a `play_log` table. A normal day adds a handful of rows instead of one per game owned. In a test with 3,000 games and 400 days of play the log held about 2,100 rows and the database was 360 KB.
 - **Saved data first, Steam second.** The dashboard is drawn from SQLite, so it opens straight away and works offline. If the data is older than 15 minutes the page asks for a fresh scan in the background.
+- **Start with Windows is the registry, not a saved setting.** Ticking the box adds one value to `HKEY_CURRENT_USER\...\CurrentVersion\Run` (the list Windows starts at login), pointing at the .exe with `--tray`; unticking removes it. The box reads the registry every time, so it always shows what Windows will really do, including when the app was switched off in Task Manager's Startup tab. The tests use a pretend registry, so running them never changes what your PC starts.
 - **Scans take turns.** The hourly background sync and Sync now on the page run the same scan code. A lock makes the second one wait for the first, so they never save the same player at the same moment. A background sync also never reloads the page under you: the page compares a short stamp of its numbers (games, minutes, unlocks) with the server's once a minute and offers a button instead.
 - **One connection to Steam.** A shared `requests.Session` keeps the connection open between calls. Measured here, the first call took about 600 ms and the following ones about 250 ms.
 - **Achievements without hammering Steam.** Steam has no "all my achievements" call, only one per game. So a scan only asks about games you've actually played. After that it only asks again about games whose playtime went up, because achievements only unlock while you play: a normal scan is a handful of calls, not one per game. Steam flags the games that have achievements, and those go first, but the unflagged ones get asked too, because the flag isn't always right. It asks four games at a time. If Steam says "slow down", it waits a few seconds and carries on one game at a time, and only after a few tries does it leave the rest for the next scan. The first version gave up at the first "slow down", which left most of a real library unchecked. Rarity is fetched at most once a week per game, and icons only for the achievements on screen.
