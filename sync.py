@@ -131,9 +131,14 @@ def check_achievements(steam_id: str, games: list[dict]):
         answers = _a_few_at_a_time(ask, waiting, workers)
         try:
             for game, answer in answers:
-                if isinstance(answer, api.PrivateAchievements):
-                    # Private for one game means private for all of them. Remembered,
-                    # so achievements.exe can say why it's empty (or out of date).
+                if isinstance(answer, api.PrivateAchievements) and not game.get("has_stats"):
+                    # For a game Steam doesn't flag, "not public" only means its achievements
+                    # aren't shown to anyone (found on a real profile): save it as "has none".
+                    answer = []
+                elif isinstance(answer, api.PrivateAchievements):
+                    # For a flagged game it really is the profile: private for one game means
+                    # private for all of them. Remembered, so achievements.exe can say why
+                    # it's empty (or out of date). Flagged games go first, so this shows early.
                     storage.mark_achievements_private(steam_id)
                     return
                 if isinstance(answer, api.RateLimited):

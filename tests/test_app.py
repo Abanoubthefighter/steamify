@@ -400,6 +400,8 @@ def test_private_achievements_are_explained(client, steam, monkeypatch):
     def private(steam_id, app_id):
         raise api.PrivateAchievements()
 
+    # Only a game Steam flags as having achievements can tell that the whole profile is private.
+    monkeypatch.setattr(api, "get_owned_games", lambda steam_id: [make_game(730, "Counter-Strike 2", hours=10, has_stats=True)])
     monkeypatch.setattr(api, "get_achievements", private)
     scan(client, player="me")
     assert "Steam won't share this player's achievements" in client.get(f"/player/{ME}").text

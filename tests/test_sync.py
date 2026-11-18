@@ -252,3 +252,20 @@ def test_a_second_scan_waits_for_the_first(steam):
     waiting.join(timeout=5)
     assert finished and finished[0][0] == {"detail": "waiting for the scan that's already running"}
     assert finished[0][-1]["steam_id"] == ME
+
+
+def test_not_public_for_an_unflagged_game_only_means_that_game(achievements):
+    asked, answers, _ = achievements
+    answers[20] = api.PrivateAchievements()  # game 20 isn't flagged by Steam
+    list(sync.scan("tester"))
+    assert storage.get_achievement_coverage(ME) == {"played": 3, "waiting": 0, "private": False}
+    assert storage.get_achievement_summary(ME)["games"] == 2  # the two real ones still count
+
+
+def test_a_profile_that_went_private_is_noticed_even_when_its_old_numbers_are_saved(achievements, monkeypatch):
+    asked, answers, library = achievements
+    list(sync.scan("tester"))
+    library[0]["minutes"] += 30  # played a flagged game since
+    answers[10] = api.PrivateAchievements()
+    list(sync.scan("tester", force=True))
+    assert storage.get_achievement_coverage(ME)["private"] is True
