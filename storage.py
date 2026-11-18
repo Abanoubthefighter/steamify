@@ -231,7 +231,7 @@ def list_players(limit: int) -> list[dict]:
 
 
 def forget_player(steam_id: str) -> None:
-    """Delete a player. Their library and history go with them (ON DELETE CASCADE)."""
+    """Delete a player. Their library, history and achievements go with them (ON DELETE CASCADE)."""
     with open_db() as db:
         db.execute("DELETE FROM players WHERE steam_id = ?", (steam_id,))
 

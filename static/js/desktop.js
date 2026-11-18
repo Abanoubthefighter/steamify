@@ -270,7 +270,42 @@ export function openTemplatePopup(name) {
   return openPopup({ title, color, content: template.content.cloneNode(true) });
 }
 
+/**
+ * Ask before something that can't be undone, like deleting. "Keep it" has
+ * the focus, so pressing Enter by accident is safe; onConfirm only runs if
+ * the other button is pressed. `picture` shows what's about to go.
+ */
+export function askToConfirm({ title, heading, message, confirm, picture, onConfirm }) {
+  const content = document.createDocumentFragment();
+  if (picture) {
+    const image = element("img", "confirm__picture");
+    image.src = picture;
+    image.alt = "";
+    content.append(image);
+  }
+  const yes = element("button", "btn btn--small", confirm);
+  yes.type = "button";
+  const no = element("button", "btn btn--small", "Keep it");
+  no.type = "button";
+  no.dataset.action = "close";
+  no.dataset.autofocus = "";
+  const buttons = element("div", "btn-row");
+  buttons.append(yes, no);
+  content.append(element("h3", "heading", heading), element("p", "", message), buttons);
+
+  const popup = openPopup({ title, color: "red", content });
+  yes.addEventListener("click", () => {
+    closePopup(popup);
+    onConfirm();
+  });
+  return popup;
+}
+
 // --- Start menu and taskbar ------------------------------------------------
+
+export function closeStartMenu() {
+  if (!startMenu.hidden) toggleStartMenu(false);
+}
 
 function toggleStartMenu(open = startMenu.hidden) {
   if (open) renderPrograms();

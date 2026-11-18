@@ -65,7 +65,7 @@ RECENT_GAMES_COUNT = 3  # "2w" documents shown next to them
 LIBRARY_PAGE_SIZE = 50  # rows in library.exe before "show all"
 SHARED_GAMES_COUNT = 5  # games listed in versus.exe
 CHART_GAMES_COUNT = 8   # bars in the top games chart
-PLAYERS_IN_MENU = 6     # recently scanned players listed in the start menu
+PLAYERS_IN_MENU = 50    # saved players listed in the start menu, newest first (the list scrolls)
 
 # Range buttons on the history chart: label -> (bar size, number of bars).
 # None means "as far back as the log goes".

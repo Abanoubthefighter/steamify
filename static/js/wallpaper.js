@@ -2,7 +2,7 @@
 // straight away and saves it on the server (wallpaper.py), so there's no
 // Apply button. If saving fails, the wallpaper goes back to how it was.
 
-import { addMenuAction, closePopup, openPopup, openTemplatePopup, showMessage } from "./desktop.js";
+import { addMenuAction, askToConfirm, openTemplatePopup, showMessage } from "./desktop.js";
 
 const layer = document.querySelector("[data-wallpaper]");
 // The wallpaper as the server last confirmed it:
@@ -148,14 +148,17 @@ function onClick(event) {
 
 /** "Delete this picture?" with the picture itself, so it's clear which one. */
 function askToDelete(name, url) {
-  const content = document.querySelector("template[data-picture-confirm]").content.cloneNode(true);
-  content.querySelector("img").src = url;
-  const popup = openPopup({ title: "delete.exe", color: "red", content });
-  popup.querySelector("[data-confirm-delete]").addEventListener("click", async () => {
-    closePopup(popup);
-    await save(`/wallpaper/picture/${encodeURIComponent(name)}/delete`);
-    // The tile that had focus is gone now, so put the keyboard somewhere sensible.
-    dialog?.querySelector("input:checked, [data-picture-pick]")?.focus();
+  askToConfirm({
+    title: "delete.exe",
+    heading: "Delete this picture?",
+    message: "It's removed from the app. The original file on your computer stays where it is.",
+    confirm: "Delete",
+    picture: url, // so it's clear which one
+    onConfirm: async () => {
+      await save(`/wallpaper/picture/${encodeURIComponent(name)}/delete`);
+      // The tile that had focus is gone now, so put the keyboard somewhere sensible.
+      dialog?.querySelector("input:checked, [data-picture-pick]")?.focus();
+    },
   });
 }
 

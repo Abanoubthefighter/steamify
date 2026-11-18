@@ -16,6 +16,7 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 - **versus.exe**: compare with a friend, game by game, and on achievements in the games you both own.
 - **wallpaper.exe**: pick a built-in wallpaper, or import your own pictures and dim them so the windows stay readable. Every picture you import stays in a little gallery until you delete it. It's under Start > Change wallpaper.
 - **A working desktop**: drag windows, minimise them to the taskbar, maximise the chart, bring things back from the start menu.
+- **Every scanned player in the start menu**, one click to switch. Done comparing with a friend? The red button next to their name forgets them: the app deletes their library, history and achievements, and their Steam account isn't touched.
 
 [Full-page screenshot](docs/dashboard-full.png)
 
@@ -89,7 +90,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, charts
-tests/         216 tests; any that tried to reach Steam would fail
+tests/         221 tests; any that tried to reach Steam would fail
 ```
 
 A few decisions worth explaining:

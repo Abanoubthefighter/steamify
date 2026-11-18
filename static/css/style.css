@@ -1704,6 +1704,27 @@ li:last-child > .row {
   font-size: var(--text-xs);
 }
 
+/* Saved players: the list scrolls on its own after about seven names, so
+   Programs and System stay in view however many players there are. */
+.menu-players {
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.menu-player {
+  display: flex;
+  align-items: center;
+}
+
+.menu-player .menu-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-player__forget {
+  margin: 0 10px 0 4px;
+}
+
 /* --- Motion -------------------------------------------------------------- */
 
 /* Windows pop open in a few chunky steps instead of a smooth fade. */

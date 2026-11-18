@@ -11,7 +11,7 @@ import config
 import demo
 import storage
 import sync
-from conftest import FAKE_KEY, PNG, WEBP, make_game, make_profile
+from conftest import FAKE_KEY, PNG, WEBP, make_achievements, make_game, make_profile
 
 ME = "76561198000000001"
 FRIEND = "76561198000000002"
@@ -391,3 +391,54 @@ def test_the_rarest_unlock_shows_with_its_share_of_players(client):
     rarest = storage.get_rarest_unlock(demo.PLAYER_ID)
     assert "Rarest unlock" in page and rarest["name"] in page
     assert "of players have it" in page
+
+
+# --- Forgetting a player ------------------------------------------------------
+
+FRIEND = "76561198000000002"
+
+
+def save_friend():
+    """A friend with a library, a day of history and some achievements."""
+    storage.save_snapshot(make_profile(FRIEND, "pal"), [make_game(1, "Hades", hours=10)])
+    storage.add_history(FRIEND, [("2026-11-01", 1, 60)])
+    storage.save_achievements(FRIEND, 1, 600, make_achievements(1, unlocked=2, locked=1))
+
+
+def test_forgetting_a_player_deletes_everything_about_them(client):
+    save_friend()
+    reply = client.post(f"/player/{FRIEND}/forget")
+    assert reply.status_code == 200
+    assert storage.get_player(FRIEND) is None
+    assert storage.get_library(FRIEND) == []
+    assert storage.first_log_day(FRIEND) is None
+    assert storage.get_achievement_summary(FRIEND)["checked"] == 0
+    assert client.get(f"/player/{FRIEND}").status_code == 404
+
+
+def test_a_forgotten_player_isnt_reopened_on_the_next_launch(client):
+    save_friend()
+    storage.set_setting("last_player", FRIEND)
+    storage.set_setting("last_friend", FRIEND)
+    client.post(f"/player/{FRIEND}/forget")
+    assert storage.get_setting("last_player") is None and storage.get_setting("last_friend") is None
+    assert client.get("/").headers["Location"] == f"{DEMO_PAGE}?vs={demo.FRIEND_ID}"
+
+
+def test_the_demo_players_cant_be_forgotten(client):
+    for steam_id in (demo.PLAYER_ID, demo.FRIEND_ID):
+        reply = client.post(f"/player/{steam_id}/forget")
+        assert reply.status_code == 400 and reply.json["title"]
+        assert storage.get_player(steam_id)
+
+
+def test_forgetting_someone_already_gone_gets_a_popup_message(client):
+    reply = client.post(f"/player/{FRIEND}/forget")
+    assert reply.status_code == 404 and reply.json["message"]
+
+
+def test_the_start_menu_offers_to_forget_real_players_but_not_the_demo(client):
+    save_friend()
+    page = client.get(DEMO_PAGE).text
+    assert f'data-forget-player="{FRIEND}"' in page
+    assert f'data-forget-player="{demo.PLAYER_ID}"' not in page

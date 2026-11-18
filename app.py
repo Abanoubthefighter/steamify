@@ -164,7 +164,7 @@ def dashboard(steam_id: str):
         achievements=_achievements(steam_id),
         library=_library_page(games, request.args),
         sort_choices=stats.sort_choices(),
-        players=[person for person in storage.list_players(config.PLAYERS_IN_MENU) if person["steam_id"] != demo.FRIEND_ID],
+        players=_menu_players(),
         scan_defaults={
             "player": config.DEFAULT_STEAM_ID if is_demo else steam_id,
             "friend": friend["steam_id"] if friend and not is_demo else "",
@@ -195,6 +195,15 @@ def game_card(steam_id: str, app_id: int):
         game_count=len(games),
         share=stats.percent(game["minutes"], total),
     )
+
+
+def _menu_players() -> list[dict]:
+    """The saved players for the start menu. The demo friend is left out, and the demo can't be forgotten."""
+    return [
+        {**person, "can_forget": not demo.is_demo(person["steam_id"])}
+        for person in storage.list_players(config.PLAYERS_IN_MENU)
+        if person["steam_id"] != demo.FRIEND_ID
+    ]
 
 
 def _remember(player: dict, friend: dict | None) -> None:
@@ -327,6 +336,21 @@ def _dashboard_url(found: list[str]) -> str | None:
     if not found:
         return None
     return url_for("dashboard", steam_id=found[0], vs=found[1] if len(found) > 1 else None)
+
+
+@app.post("/player/<steam_id>/forget")
+def forget_player(steam_id: str):
+    """Delete a saved player and everything the app knows about them. Their Steam account isn't touched."""
+    if demo.is_demo(steam_id):
+        return jsonify(title="The demo stays", message="The made-up players come back every day anyway."), 400
+    if not storage.get_player(steam_id):
+        return jsonify(title="Already gone", message="That player isn't saved in the app any more."), 404
+    storage.forget_player(steam_id)  # their library, history and achievements go with them
+    # Don't reopen them on the next launch either.
+    for key in ("last_player", "last_friend"):
+        if storage.get_setting(key) == steam_id:
+            storage.set_setting(key, None)
+    return jsonify(ok=True)
 
 
 @app.post("/settings/key")

@@ -7,6 +7,7 @@ import { initScan } from "./scan.js";
 import { initLibrary } from "./library.js";
 import { initCharts } from "./charts.js";
 import { initWallpaper } from "./wallpaper.js";
+import { initPlayers } from "./players.js";
 
 initDesktop();
 initAlerts();
@@ -14,3 +15,4 @@ initScan();
 initLibrary();
 initCharts();
 initWallpaper();
+initPlayers();

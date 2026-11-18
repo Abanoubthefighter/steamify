@@ -38,10 +38,17 @@
       <ul data-programs></ul>
       {% if players %}
       <p class="start-menu__heading">Players</p>
-      <ul>
+      {# Every saved player. The red button forgets one (static/js/players.js asks first). #}
+      <ul class="menu-players">
         {% for person in players %}
-        <li><a class="menu-item" href="{{ url_for('dashboard', steam_id=person.steam_id) }}"
-               {% if player and person.steam_id == player.steam_id %}aria-current="page"{% endif %}>{{ person.name }}</a></li>
+        <li class="menu-player" data-player-item="{{ person.steam_id }}">
+          <a class="menu-item" href="{{ url_for('dashboard', steam_id=person.steam_id) }}"
+             {% if player and person.steam_id == player.steam_id %}aria-current="page"{% endif %}>{{ person.name }}</a>
+          {% if person.can_forget %}
+          <button class="ctrl ctrl--close menu-player__forget" type="button" data-forget-player="{{ person.steam_id }}"
+                  data-name="{{ person.name }}" aria-label="Forget {{ person.name }}" title="Forget this player"></button>
+          {% endif %}
+        </li>
         {% endfor %}
       </ul>
       {% endif %}
