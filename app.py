@@ -57,6 +57,7 @@ CONTENT_SECURITY_POLICY = (
 def prepare() -> None:
     """Get the database ready. Call once at startup, before the first request."""
     storage.init_db()
+    storage.move_icon_addresses(api.achievement_icon_address)  # icons saved before Steam moved them
     demo.install()
 
 

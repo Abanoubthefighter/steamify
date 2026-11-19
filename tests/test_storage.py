@@ -313,3 +313,13 @@ def test_has_shared_achievements():
     assert not storage.has_shared_achievements("me")  # "has none" isn't sharing
     storage.save_achievements("me", 1, 2400, make_achievements(1, unlocked=0, locked=3))
     assert storage.has_shared_achievements("me")
+
+
+def test_saved_icon_addresses_can_be_moved():
+    owns("me", make_game(1, "Hades", hours=40))
+    storage.save_achievements("me", 1, 100, make_achievements(1, unlocked=2))
+    storage.save_achievement_icons(1, {"A1_0": "https://old.test/a.jpg", "A1_1": "https://new.test/b.jpg"})
+    to_new = lambda app_id, address: address.replace("old.test", "new.test")
+    assert storage.move_icon_addresses(to_new) == 1
+    assert storage.move_icon_addresses(to_new) == 0  # already right: nothing to do
+    assert {row["icon"] for row in storage.get_game_achievements("me", 1)} == {"https://new.test/a.jpg", "https://new.test/b.jpg"}

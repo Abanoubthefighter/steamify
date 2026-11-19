@@ -409,6 +409,24 @@ def is_missing_icons(app_id: int) -> bool:
     return row is not None
 
 
+def move_icon_addresses(new_address) -> int:
+    """Rewrite saved icon addresses with new_address(app_id, address). Returns how many changed.
+
+    For when Steam moves its pictures (see api.achievement_icon_address).
+    Addresses that are already right are left alone, so this is quick to
+    run at every start.
+    """
+    with open_db() as db:
+        rows = db.execute("SELECT app_id, api_name, icon FROM achievement_info WHERE icon IS NOT NULL").fetchall()
+        moved = []
+        for row in rows:
+            address = new_address(row["app_id"], row["icon"])
+            if address and address != row["icon"]:
+                moved.append((address, row["app_id"], row["api_name"]))
+        db.executemany("UPDATE achievement_info SET icon = ? WHERE app_id = ? AND api_name = ?", moved)
+    return len(moved)
+
+
 def games_needing_rarity(steam_id: str, checked_before: float) -> list[int]:
     """Games where the player has unlocked something and the rarity is unknown or older than `checked_before`."""
     with open_db() as db:

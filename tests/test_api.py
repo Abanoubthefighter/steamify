@@ -258,8 +258,17 @@ def test_achievement_icons_come_from_the_schema(monkeypatch):
         {"name": "NO_ICON", "displayName": "?"},
     ]}}})
     assert api.get_achievement_icons(1145360) == {
-        "ESCAPE": "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/apps/1145360/escape.jpg",
+        # on Steam's current picture server, whatever server the reply named
+        "ESCAPE": "https://shared.fastly.steamstatic.com/community_assets/images/apps/1145360/escape.jpg",
     }
+
+
+def test_achievement_icon_address():
+    old = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/1952920/3c10c82b.jpg"
+    assert api.achievement_icon_address(1952920, old) == (
+        "https://shared.fastly.steamstatic.com/community_assets/images/apps/1952920/3c10c82b.jpg"
+    )
+    assert api.achievement_icon_address(1952920, "https://example.test/") is None
 
 
 def test_global_percentages_accept_numbers_and_text(monkeypatch):

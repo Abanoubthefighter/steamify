@@ -51,6 +51,10 @@ STEAM_KEY_PAGE = "https://steamcommunity.com/dev/apikey"
 STEAM_STORE_PAGE = "https://store.steampowered.com/app/{app_id}"
 STEAM_ICON_URL = "https://media.steampowered.com/steamcommunity/public/images/apps/{app_id}/{icon}.jpg"
 STEAM_ART_URL = "https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/header.jpg"
+# Where achievement icons live now. Steam's API still hands out addresses on its
+# old picture server, which has none for newer games (404), so api.py rebuilds
+# every icon address on this one. It serves the old games' icons too.
+STEAM_ACHIEVEMENT_ICON_URL = "https://shared.fastly.steamstatic.com/community_assets/images/apps/{app_id}/{file}"
 # The only outside hosts the page may load pictures from (avatars, icons, game art).
 IMAGE_HOSTS = "https://*.steamstatic.com https://*.steampowered.com https://*.akamaihd.net"
 

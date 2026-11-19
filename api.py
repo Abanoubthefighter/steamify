@@ -305,7 +305,18 @@ def get_achievement_icons(app_id: int) -> dict[str, str]:
     """The icon of every achievement in a game: {api name: picture address}."""
     game = _check(_send("ISteamUserStats", "GetSchemaForGame", version=2, appid=app_id)).get("game", {})
     listed = game.get("availableGameStats", {}).get("achievements", [])
-    return {item["name"]: item["icon"] for item in listed if item.get("name") and item.get("icon")}
+    icons = {item["name"]: achievement_icon_address(app_id, item["icon"]) for item in listed if item.get("name") and item.get("icon")}
+    return {name: address for name, address in icons.items() if address}
+
+
+def achievement_icon_address(app_id: int, address: str) -> str | None:
+    """The same icon on Steam's current picture server (config.STEAM_ACHIEVEMENT_ICON_URL).
+
+    Steam names the file after a fingerprint of the picture, so only the
+    server changes: ".../apps/1145360/escape.jpg" keeps "escape.jpg".
+    """
+    file = address.rsplit("/", 1)[-1].strip()
+    return config.STEAM_ACHIEVEMENT_ICON_URL.format(app_id=app_id, file=file) if file else None
 
 
 def get_global_percentages(app_id: int) -> dict[str, float]:
