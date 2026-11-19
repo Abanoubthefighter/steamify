@@ -1,0 +1,15 @@
+{#
+  A small square picture (a game's or an achievement's icon) with the first
+  letter of its name underneath. When there's no picture, or it fails to
+  load (desktop.js hides a broken one), the letter shows instead, and the
+  square keeps its place, so the row around it doesn't fall apart.
+
+      {{ icon(url, game.name) }}                              24 px, for rows
+      {{ icon(item.icon, item.name, "achievement__icon", 40) }}
+#}
+{% macro icon(url, name, class="row__icon", size=24) %}
+<span class="{{ class }} icon-box" aria-hidden="true">
+  <span class="icon-box__letter">{{ name[:1] | upper }}</span>
+  {% if url %}<img src="{{ url }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy" data-hide-on-error>{% endif %}
+</span>
+{% endmacro %}

@@ -4,13 +4,10 @@
   the ones still to get, the most common first: if most players have one,
   it's probably the easiest to get next.
 #}
+{% from "partials/icon.html" import icon %}
 {% macro achievement(item) %}
 <li class="achievement{{ ' achievement--locked' if not item.achieved }}">
-  {% if item.icon %}
-  <img class="achievement__icon" src="{{ item.icon }}" alt="" width="40" height="40" loading="lazy" data-hide-on-error>
-  {% else %}
-  <span class="achievement__icon achievement__icon--letter" aria-hidden="true">{{ item.name[:1] | upper }}</span>
-  {% endif %}
+  {{ icon(item.icon, item.name, "achievement__icon", 40) }}
   <span class="achievement__text">
     <span class="achievement__name">{{ item.name }}</span>
     {% if item.description %}<span class="achievement__description">{{ item.description }}</span>{% endif %}

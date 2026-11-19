@@ -1,13 +1,9 @@
 {# One line in library.exe. Clicking it opens the game's details popup. #}
+{% from "partials/icon.html" import icon %}
 {% macro game_row(game) %}
 <li>
   <button class="row" type="button" data-game="{{ game.app_id }}">
-    {% set icon = game | icon_url %}
-    {% if icon %}
-    <img class="row__icon" src="{{ icon }}" alt="" width="24" height="24" loading="lazy">
-    {% else %}
-    <span class="row__icon row__icon--letter" aria-hidden="true">{{ game.name[:1] | upper }}</span>
-    {% endif %}
+    {{ icon(game | icon_url, game.name) }}
     <span class="row__name">{{ game.name }}</span>
     <span class="row__when">{{ game | last_played }}</span>
     <span class="row__hours">{{ game.minutes | hours if game.minutes else "–" }}</span>

@@ -521,6 +521,7 @@ def test_a_games_page_lists_unlocked_then_locked_achievements(client):
     assert f"Unlocked ({game['unlocked']})" in page
     assert f"Still to get ({game['total'] - game['unlocked']})" in page
     assert page.count("<li class=\"achievement") == game["total"]  # every one, locked or not
+    assert page.count("icon-box__letter") == game["total"]  # a letter under every icon, in case it doesn't load
 
 
 def test_a_game_without_achievements_has_no_page(client):

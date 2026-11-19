@@ -1087,13 +1087,27 @@ li:last-child > .row {
   width: 24px;
   height: 24px;
   border: 1.5px solid var(--ink);
+  font: 600 var(--text-xs) var(--font-ui);
 }
 
-.row__icon--letter {
+/* An icon with its letter underneath (partials/icon.html). The picture covers
+   the letter; if it's missing or broken, the letter shows and the square
+   keeps its place in the row. */
+.icon-box {
+  position: relative;
   display: grid;
   place-items: center;
+  flex: none;
+  overflow: hidden;
   background: var(--lilac);
-  font: 600 var(--text-xs) var(--font-ui);
+}
+
+.icon-box > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .row__name {
@@ -1531,12 +1545,6 @@ h4.trophy-game__label {
   width: 40px;
   height: 40px;
   border: 1.5px solid var(--ink);
-}
-
-.achievement__icon--letter {
-  display: grid;
-  place-items: center;
-  background: var(--lilac);
   font: 600 var(--text-md) var(--font-ui);
 }
 
@@ -1568,7 +1576,7 @@ h4.trophy-game__label {
   opacity: 0.55;
 }
 
-.achievement--locked .achievement__icon--letter {
+.achievement--locked .achievement__icon {
   background: var(--paper);
 }
 

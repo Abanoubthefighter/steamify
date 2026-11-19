@@ -5,6 +5,7 @@
 #}
 {% from "partials/window.html" import window %}
 {% from "partials/stat_tile.html" import stat_tile %}
+{% from "partials/icon.html" import icon %}
 {% call window("achievements", "achievements.exe", color="red", full=true) %}
 <div class="body">
   {% if achievements and achievements.games %}
@@ -40,11 +41,7 @@
       <ul class="unlocks" role="list">
         {% for unlock in achievements.recent %}
         <li class="unlock" title="{{ unlock.description }}">
-          {% if unlock.icon %}
-          <img class="row__icon" src="{{ unlock.icon }}" alt="" width="24" height="24" loading="lazy" data-hide-on-error>
-          {% else %}
-          <span class="row__icon row__icon--letter" aria-hidden="true">{{ unlock.name[:1] | upper }}</span>
-          {% endif %}
+          {{ icon(unlock.icon, unlock.name) }}
           <span class="unlock__text">
             <span class="unlock__name">{{ unlock.name }}</span>
             <span class="unlock__game">{{ unlock.game }}</span>
@@ -78,11 +75,7 @@
       {% set rarest = achievements.rarest %}
       <h3 class="label">Rarest unlock</h3>
       <div class="unlock unlock--alone" title="{{ rarest.description }}">
-        {% if rarest.icon %}
-        <img class="row__icon" src="{{ rarest.icon }}" alt="" width="24" height="24" loading="lazy" data-hide-on-error>
-        {% else %}
-        <span class="row__icon row__icon--letter" aria-hidden="true">{{ rarest.name[:1] | upper }}</span>
-        {% endif %}
+        {{ icon(rarest.icon, rarest.name) }}
         <span class="unlock__text">
           <span class="unlock__name">{{ rarest.name }}</span>
           <span class="unlock__game">{{ rarest.game }} · {{ rarest.percent | share }} of players have it</span>
