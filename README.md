@@ -28,7 +28,7 @@ It opens in its own window (not a browser tab) and keeps everything it learns in
 
 ## Installing
 
-Run `Steamify-1.4.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
+Download `Steamify-1.4.0-Setup.exe` from the [latest release](https://github.com/Abanoubthefighter/steamify/releases/latest) and run it. (Or make it yourself, see [Building the installer](#building-the-installer).) It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
 - To update, run the newer installer. Your play history and API key stay, also when updating from Steam Stats Tracker: the installer swaps in the new name and shortcuts. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
