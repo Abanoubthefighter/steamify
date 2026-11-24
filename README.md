@@ -1,10 +1,12 @@
-# Steam Stats Tracker
+# Steamify
 
 A small desktop app that reads a Steam library, remembers how it changes, and shows it all on a pretend retro desktop: every stat lives in its own little window you can drag around, minimise and close.
 
 ![The dashboard with the demo player](docs/dashboard.png)
 
 It opens in its own window (not a browser tab), works without an API key thanks to a built-in demo player, and keeps everything it learns in a local SQLite file.
+
+Steamify is an unofficial fan project, not made by or affiliated with Valve. Up to version 1.3.0 it was called Steam Stats Tracker.
 
 ## What it does
 
@@ -28,10 +30,10 @@ It opens in its own window (not a browser tab), works without an API key thanks 
 
 ## Installing
 
-Run `SteamStatsTracker-1.3.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
+Run `Steamify-1.3.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
-- To update, run the newer installer. Your play history and API key stay. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
+- To update, run the newer installer. Your play history and API key stay, also when updating from Steam Stats Tracker: the installer swaps in the new name and shortcuts. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
 - To remove it, use **Settings > Apps > Installed apps**. It asks whether to delete your saved data too, and takes the app off the programs Windows starts at login.
 
 ## Running it from source
@@ -55,15 +57,15 @@ py desktop.py
 
 You need [Inno Setup 6](https://jrsoftware.org/isinfo.php) (free) on top of the usual setup. Then double-click `build_exe.bat`. It takes under a minute and makes two things in `dist\`:
 
-- `SteamStatsTracker\`: the app, built by PyInstaller from `packaging\SteamStatsTracker.spec`. It runs without Python.
-- `SteamStatsTracker-<version>-Setup.exe` (for example `SteamStatsTracker-1.3.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
+- `Steamify\`: the app, built by PyInstaller from `packaging\Steamify.spec`. It runs without Python.
+- `Steamify-<version>-Setup.exe` (for example `Steamify-1.3.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
 
 Without Inno Setup you still get the folder. A few things worth knowing:
 
-- **The .exe needs its `_internal` folder.** That's where Python itself lives. Copy `SteamStatsTracker.exe` somewhere on its own and it stops with "Failed to load Python DLL". The installer exists so nobody has to know that.
+- **The .exe needs its `_internal` folder.** That's where Python itself lives. Copy `Steamify.exe` somewhere on its own and it stops with "Failed to load Python DLL". The installer exists so nobody has to know that.
 - **Why a folder and not one big .exe.** A single-file build unpacks itself into a temp folder on every start. Measured here, it opened in 1.1 s against 0.7 s for the folder, and it leaves those temp folders behind if it's ever killed.
 - **The version number** lives in `config.py` as `APP_VERSION`. The .exe's Properties tab, the About box and the installer's file name all read it from there.
-- The installed app keeps its database, its `.env` and your wallpaper pictures in `%LOCALAPPDATA%\SteamStatsTracker`, not next to the program, which is why updates don't touch them.
+- The installed app keeps its database, its `.env` and your wallpaper pictures in `%LOCALAPPDATA%\SteamStatsTracker`, not next to the program, which is why updates don't touch them. The folder kept the old name on purpose, so updates from before the rename still find it (`APP_ID` in `config.py`).
 
 ## Using your own Steam data
 
@@ -101,7 +103,7 @@ packaging/     the PyInstaller and Inno Setup recipes build_exe.bat uses
 templates/     one file per window, built from a shared window macro
 static/css/    theme.css (all colours, fonts, sizes) and style.css (layout)
 static/js/     window manager, scan progress, library, trophies, charts
-tests/         309 tests; none can reach Steam or the real registry
+tests/         316 tests; none can reach Steam or the real registry
 ```
 
 A few decisions worth explaining:
