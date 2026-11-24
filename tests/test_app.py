@@ -81,6 +81,14 @@ def test_about_box_shows_the_version(client):
     assert f"Version {config.APP_VERSION}" in page
 
 
+def test_pages_use_the_name_from_config(client, monkeypatch):
+    monkeypatch.setattr(config, "APP_NAME", "Renamed")
+    page = client.get(DEMO_PAGE).text
+    assert "· Renamed</title>" in page
+    assert '<p class="big">Renamed</p>' in page  # about.txt
+    assert "Renamed</title>" in client.get("/player/123").text  # the 404 page
+
+
 def test_demo_views_are_not_remembered(client):
     client.get(DEMO_PAGE)
     assert storage.get_setting("last_player") is None

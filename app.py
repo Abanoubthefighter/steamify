@@ -103,6 +103,7 @@ def template_globals() -> dict:
     return {
         "has_key": bool(config.STEAM_API_KEY),
         "key_page": config.STEAM_KEY_PAGE,
+        "app_name": config.APP_NAME,
         "app_version": config.APP_VERSION,
         # A function, not a value: only base.html calls it, so the small page
         # fragments (library rows, game card) don't read the setting for nothing.

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Steam Stats Tracker{% endblock %}</title>
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/icon.svg') }}">
   <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ url_for('static', filename='fonts/fredoka-latin.woff2') }}">
   <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ url_for('static', filename='fonts/josefin-sans-latin.woff2') }}">
@@ -88,7 +88,7 @@
   </template>
 
   <template data-popup="about" data-title="about.txt">
-    <p class="big">Steam Stats Tracker</p>
+    <p class="big">{{ app_name }}</p>
     <p>A little desktop for your Steam library: what you play, what you ignore, and how that changes over time.</p>
     <p class="note">Not affiliated with Valve. Your data comes from the public Steam Web API and stays on this computer.</p>
     <p class="note">Version {{ app_version }}</p>

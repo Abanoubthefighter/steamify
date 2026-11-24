@@ -1,5 +1,5 @@
 @echo off
-rem Double-click this file to open Steam Stats Tracker.
+rem Double-click this file to open Steamify.
 rem
 rem The first run makes a private Python environment in the .venv folder and
 rem installs what the app needs. After that it only opens the window, unless

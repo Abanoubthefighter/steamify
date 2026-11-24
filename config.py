@@ -13,9 +13,11 @@ from dotenv import load_dotenv, set_key
 
 # --- The app itself ----------------------------------------------------------
 
-APP_NAME = "Steam Stats Tracker"
+APP_NAME = "Steamify"
 APP_VERSION = "1.3.0"         # bump for a new release; the .exe and the installer read it from here
-APP_ID = "SteamStatsTracker"  # no spaces: used for the data folder and to spot a copy that's already open
+APP_ID = "SteamStatsTracker"  # never shown, and never changes: the data folder, the
+                              # "already open" check and Start with Windows all use it,
+                              # which is how an update keeps your data after a rename
 
 # --- Where things live -------------------------------------------------------
 
