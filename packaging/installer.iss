@@ -1,15 +1,21 @@
-; Inno Setup recipe: turns dist\SteamStatsTracker into one Setup.exe.
+; Inno Setup recipe: turns dist\Steamify into one Setup.exe.
 ; build_exe.bat runs it after PyInstaller is done; you don't need to run it by hand.
 ;
 ; The name and version are read from the built .exe, which got them from
 ; config.py, so config.py stays the only place they are written down.
 
-#define AppExe    "SteamStatsTracker.exe"
-#define BuiltApp  SourcePath + "..\dist\SteamStatsTracker\" + AppExe
+; config.EXE_NAME: what PyInstaller called the .exe and its folder.
+#define ExeName   "Steamify"
+#define AppExe    ExeName + ".exe"
+#define BuiltApp  SourcePath + "..\dist\" + ExeName + "\" + AppExe
 #define AppName   GetFileDescription(BuiltApp)
 #define AppVersion GetFileProductVersion(BuiltApp)
 ; config.APP_ID: the name of the app's "I'm already open" flag and of its data folder.
+; It kept the old name on purpose when the app was renamed, so updates find the data.
 #define AppKey "SteamStatsTracker"
+; What the app was called before 1.4.0, so an update can tidy up after it.
+#define OldExe  "SteamStatsTracker.exe"
+#define OldName "Steam Stats Tracker"
 
 [Setup]
 ; This ID is how Windows recognises the app across versions. Never change it,
@@ -39,7 +45,7 @@ UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 
 OutputDir=..\dist
-OutputBaseFilename=SteamStatsTracker-{#AppVersion}-Setup
+OutputBaseFilename={#ExeName}-{#AppVersion}-Setup
 Compression=lzma2/max
 SolidCompression=yes
 
@@ -58,9 +64,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; On an update, clear out the old program files first, so nothing from the
 ; previous version is left behind. Saved data lives elsewhere and isn't touched.
 Type: filesandordirs; Name: "{app}\_internal"
+; The .exe and shortcuts from before the rename, which the new ones replace.
+Type: files; Name: "{app}\{#OldExe}"
+Type: files; Name: "{autoprograms}\{#OldName}.lnk"
+Type: files; Name: "{autodesktop}\{#OldName}.lnk"
 
 [Files]
-Source: "..\dist\SteamStatsTracker\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\{#ExeName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"

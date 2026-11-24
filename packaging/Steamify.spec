@@ -33,8 +33,8 @@ version_info = VSVersionInfo(
                 StringStruct("ProductName", config.APP_NAME),
                 StringStruct("FileVersion", config.APP_VERSION),
                 StringStruct("ProductVersion", config.APP_VERSION),
-                StringStruct("InternalName", config.APP_ID),
-                StringStruct("OriginalFilename", f"{config.APP_ID}.exe"),
+                StringStruct("InternalName", config.EXE_NAME),
+                StringStruct("OriginalFilename", f"{config.EXE_NAME}.exe"),
             ]),
         ]),
         VarFileInfo([VarStruct("Translation", [0x0409, 1200])]),
@@ -57,10 +57,10 @@ exe = EXE(
     PYZ(analysis.pure),
     analysis.scripts,
     exclude_binaries=True,  # Python and the libraries go in the _internal folder next to the .exe
-    name=config.APP_ID,
+    name=config.EXE_NAME,
     console=False,          # no black console window behind the app
     icon=str(ROOT / "static" / "img" / "icon.ico"),
     version=version_info,
 )
 
-COLLECT(exe, analysis.binaries, analysis.datas, name=config.APP_ID)
+COLLECT(exe, analysis.binaries, analysis.datas, name=config.EXE_NAME)

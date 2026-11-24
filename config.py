@@ -18,6 +18,7 @@ APP_VERSION = "1.3.0"         # bump for a new release; the .exe and the install
 APP_ID = "SteamStatsTracker"  # never shown, and never changes: the data folder, the
                               # "already open" check and Start with Windows all use it,
                               # which is how an update keeps your data after a rename
+EXE_NAME = "Steamify"         # the .exe, its folder and the installer's file name (no spaces)
 
 # --- Where things live -------------------------------------------------------
 
