@@ -30,7 +30,7 @@ Steamify is an unofficial fan project, not made by or affiliated with Valve. Up 
 
 ## Installing
 
-Run `Steamify-1.3.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
+Run `Steamify-1.4.0-Setup.exe` (see [Building the installer](#building-the-installer) to make it). It installs just for you, so no admin password, and adds the app to the Start menu. You can also tick a desktop icon.
 
 - Windows may show "Windows protected your PC" because the installer isn't code-signed. Click **More info**, then **Run anyway**.
 - To update, run the newer installer. Your play history and API key stay, also when updating from Steam Stats Tracker: the installer swaps in the new name and shortcuts. If the app is hidden in the tray, the installer asks you to quit it from the tray icon first.
@@ -58,7 +58,7 @@ py desktop.py
 You need [Inno Setup 6](https://jrsoftware.org/isinfo.php) (free) on top of the usual setup. Then double-click `build_exe.bat`. It takes under a minute and makes two things in `dist\`:
 
 - `Steamify\`: the app, built by PyInstaller from `packaging\Steamify.spec`. It runs without Python.
-- `Steamify-<version>-Setup.exe` (for example `Steamify-1.3.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
+- `Steamify-<version>-Setup.exe` (for example `Steamify-1.4.0-Setup.exe`): that folder packed into an installer by Inno Setup, from `packaging\installer.iss`. This is the file to share.
 
 Without Inno Setup you still get the folder. A few things worth knowing:
 
