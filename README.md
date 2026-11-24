@@ -148,7 +148,7 @@ py -m pytest
 
 ## Credits
 
-Designed by Abanoub Milad, built with [Claude Code](https://claude.com/claude-code).
+Designed by Me , built with Claude Code.
 
 - Fonts: [Fredoka](https://fonts.google.com/specimen/Fredoka) and [Josefin Sans](https://fonts.google.com/specimen/Josefin+Sans), both under the SIL Open Font License (copies in `static/fonts`).
 - Charts: [Chart.js](https://www.chartjs.org/) 4.6.1, MIT licence.
