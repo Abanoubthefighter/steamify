@@ -233,6 +233,7 @@ def main() -> None:
         return
 
     prepare()
+    startup.follow_renamed_exe()  # after an update renamed the .exe, keep Start with Windows working
     url = start_server()
 
     if webview is None:

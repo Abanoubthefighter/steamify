@@ -12,6 +12,7 @@ installed app (a real .exe) offers it. Run from source there's no single
 program Windows could start.
 """
 
+import os
 import sys
 
 import config
@@ -45,17 +46,46 @@ def command() -> str:
     return f'"{sys.executable}" {TRAY_FLAG}'
 
 
-def is_on() -> bool:
-    """True if Windows will start this copy at login."""
+def _run_value() -> str | None:
+    """Our value in the Run list, or None if there isn't one."""
     if winreg is None:
-        return False
+        return None
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
             value, _ = winreg.QueryValueEx(key, VALUE_NAME)
     except OSError:  # no Run key, or no value for us in it
-        return False
+        return None
+    return value
+
+
+def is_on() -> bool:
+    """True if Windows will start this copy at login."""
     # A value left by a copy installed somewhere else doesn't count: it wouldn't start this one.
-    return value == command() and not _switched_off_in_windows()
+    return _run_value() == command() and not _switched_off_in_windows()
+
+
+def follow_renamed_exe() -> bool:
+    """After an update renamed the .exe, point Start with Windows at the new one.
+
+    The 1.4.0 update turned SteamStatsTracker.exe into Steamify.exe, which left
+    the Run value naming a file that's gone. desktop.py calls this at every
+    start. It only fixes a value naming a missing .exe in this copy's own
+    folder, so a copy installed somewhere else keeps its own setting. A
+    switch-off in Task Manager stays as it was. True if it changed anything.
+    """
+    value = _run_value()
+    if not available() or value is None or value == command():
+        return False
+    old_exe = value.split('"')[1] if value.startswith('"') else value.split(" ")[0]
+    same_folder = os.path.normcase(os.path.dirname(old_exe)) == os.path.normcase(os.path.dirname(sys.executable))
+    if not same_folder or os.path.exists(old_exe):
+        return False
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+            winreg.SetValueEx(key, VALUE_NAME, 0, winreg.REG_SZ, command())
+    except OSError:
+        return False  # it stays as it was; ticking the box in settings.exe again fixes it
+    return True
 
 
 def _switched_off_in_windows() -> bool:

@@ -62,3 +62,54 @@ def test_switched_off_in_task_manager_counts_as_off_until_turned_on_here(install
     startup.turn_on()
     assert startup.is_on()
     assert registry.keys[(registry.HKEY_CURRENT_USER, startup.APPROVED_KEY)] == {}
+
+
+NEW_EXE = r"C:\Users\someone\AppData\Local\Programs\Steam Stats Tracker\Steamify.exe"
+
+
+@pytest.fixture
+def renamed(monkeypatch):
+    """Pretend an update replaced EXE with NEW_EXE in the same folder."""
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", NEW_EXE)
+    monkeypatch.setattr(startup.os.path, "exists", lambda path: path == NEW_EXE)
+
+
+def test_after_a_rename_start_with_windows_follows_the_new_exe(renamed):
+    startup.winreg.CreateKey(startup.winreg.HKEY_CURRENT_USER, startup.RUN_KEY).values["SteamStatsTracker"] = f'"{EXE}" --tray'
+    assert not startup.is_on()
+    assert startup.follow_renamed_exe() is True
+    assert run_list() == {"SteamStatsTracker": f'"{NEW_EXE}" --tray'}
+    assert startup.is_on()
+    assert startup.follow_renamed_exe() is False  # nothing left to fix
+
+
+def test_a_rename_doesnt_switch_it_on(renamed):
+    assert startup.follow_renamed_exe() is False
+    assert run_list() == {}
+
+
+def test_a_copy_in_another_folder_keeps_its_setting(renamed):
+    other = r'"D:\Games\Steam Stats Tracker\SteamStatsTracker.exe" --tray'
+    startup.winreg.CreateKey(startup.winreg.HKEY_CURRENT_USER, startup.RUN_KEY).values["SteamStatsTracker"] = other
+    assert startup.follow_renamed_exe() is False
+    assert run_list() == {"SteamStatsTracker": other}
+
+
+def test_an_old_exe_that_is_still_there_is_left_alone(renamed, monkeypatch):
+    monkeypatch.setattr(startup.os.path, "exists", lambda path: True)
+    startup.winreg.CreateKey(startup.winreg.HKEY_CURRENT_USER, startup.RUN_KEY).values["SteamStatsTracker"] = f'"{EXE}" --tray'
+    assert startup.follow_renamed_exe() is False
+
+
+def test_a_switch_off_in_task_manager_survives_the_rename(renamed):
+    registry = startup.winreg
+    registry.CreateKey(registry.HKEY_CURRENT_USER, startup.RUN_KEY).values["SteamStatsTracker"] = f'"{EXE}" --tray'
+    registry.CreateKey(registry.HKEY_CURRENT_USER, startup.APPROVED_KEY).values["SteamStatsTracker"] = bytes([3]) + bytes(11)
+    assert startup.follow_renamed_exe() is True
+    assert not startup.is_on()  # still switched off, as the user left it
+
+
+def test_from_source_nothing_is_followed():
+    startup.winreg.CreateKey(startup.winreg.HKEY_CURRENT_USER, startup.RUN_KEY).values["SteamStatsTracker"] = f'"{EXE}" --tray'
+    assert startup.follow_renamed_exe() is False
