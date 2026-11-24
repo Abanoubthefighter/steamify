@@ -4,9 +4,7 @@ A small desktop app that reads a Steam library, remembers how it changes, and sh
 
 ![The dashboard with the demo player](docs/dashboard.png)
 
-It opens in its own window (not a browser tab), works without an API key thanks to a built-in demo player, and keeps everything it learns in a local SQLite file.
-
-Steamify is an unofficial fan project, not made by or affiliated with Valve. Up to version 1.3.0 it was called Steam Stats Tracker.
+It opens in its own window (not a browser tab) and keeps everything it learns in a local SQLite file.
 
 ## What it does
 
